@@ -1,3 +1,5 @@
+
+
 DEPENDPATH += $$PWD/. \
               $$PWD/audio \
               $$PWD/codec \
@@ -11,6 +13,7 @@ DEPENDPATH += $$PWD/. \
               $$PWD/table \
               $$PWD/video
 INCLUDEPATH += $$PWD/. \
+               $$PWD/../include \
                $$PWD/audio \
                $$PWD/script \
                $$PWD/os \
@@ -22,6 +25,19 @@ INCLUDEPATH += $$PWD/. \
                $$PWD/crashlog \
                $$PWD/input \
                $$PWD/codec
+
+
+
+# SDL build:
+DEFINES += SDL_BUILD
+SOURCES +=  $$PWD/audio/dsp_sdl.c \
+            $$PWD/video/video_sdl.c
+
+INCLUDEPATH += /opt/local/include/SDL/
+LIBS += -L/opt/local/lib -lSDL -lSDLmain -framework CoreFoundation -framework AppKit
+
+#none build
+#SOURCES +=  $$PWD/audio/dsp_none.c
 
 # Input
 HEADERS +=  $$PWD/animation.h \
@@ -77,6 +93,7 @@ HEADERS +=  $$PWD/animation.h \
            $$PWD/script/script.h \
            $$PWD/table/strings.h \
            $$PWD/video/video.h
+
 SOURCES += $$PWD/animation.c \
            $$PWD/config.c \
            $$PWD/explosion.c \
@@ -101,8 +118,7 @@ SOURCES += $$PWD/animation.c \
            $$PWD/wsa.c \
            $$PWD/audio/driver.c \
 #           $$PWD/audio/dsp_alsa.c \
-           $$PWD/audio/dsp_none.c \
-           $$PWD/audio/dsp_sdl.c \
+#           $$PWD/audio/dsp_none.c \
 #           $$PWD/audio/dsp_win32.c \
 #           $$PWD/audio/midi_alsa.c \
            $$PWD/audio/midi_none.c \
@@ -113,7 +129,7 @@ SOURCES += $$PWD/animation.c \
            $$PWD/codec/format80.c \
            $$PWD/crashlog/crashlog.c \
            $$PWD/crashlog/crashlog_none.c \
-           $$PWD/crashlog/crashlog_win32.c \
+#           $$PWD/crashlog/crashlog_win32.c \
            $$PWD/gui/editbox.c \
            $$PWD/gui/font.c \
            $$PWD/gui/gui.c \
@@ -127,40 +143,39 @@ SOURCES += $$PWD/animation.c \
            $$PWD/input/mouse.c \
            $$PWD/os/error.c \
 #           $$PWD/os/error_win32.c \
-           $$PWD/pool/house.c \
-           $$PWD/pool/structure.c \
-           $$PWD/pool/team.c \
-           $$PWD/pool/unit.c \
-           $$PWD/saveload/house.c \
-           $$PWD/saveload/info.c \
-           $$PWD/saveload/object.c \
+           $$PWD/pool/poolhouse.c \
+           $$PWD/pool/poolstructure.c \
+           $$PWD/pool/poolteam.c \
+           $$PWD/pool/poolunit.c \
+           $$PWD/saveload/saveloadhouse.c \
+           $$PWD/saveload/saveloadinfo.c \
+           $$PWD/saveload/saveloadobject.c \
            $$PWD/saveload/saveload.c \
-           $$PWD/saveload/scenario.c \
-           $$PWD/saveload/scriptengine.c \
-           $$PWD/saveload/structure.c \
-           $$PWD/saveload/team.c \
-           $$PWD/saveload/unit.c \
-           $$PWD/script/general.c \
+           $$PWD/saveload/saveloadscenario.c \
+           $$PWD/saveload/saveloadscriptengine.c \
+           $$PWD/saveload/saveloadstructure.c \
+           $$PWD/saveload/saveloadteam.c \
+           $$PWD/saveload/saveloadunit.c \
+           $$PWD/script/scriptgeneral.c \
            $$PWD/script/script.c \
-           $$PWD/script/structure.c \
-           $$PWD/script/team.c \
-           $$PWD/script/unit.c \
-           $$PWD/table/actioninfo.c \
-           $$PWD/table/animation.c \
-           $$PWD/table/explosion.c \
-           $$PWD/table/fileinfo.c \
-           $$PWD/table/houseanimation.c \
-           $$PWD/table/houseinfo.c \
-           $$PWD/table/landscapeinfo.c \
-           $$PWD/table/movementtype.c \
-           $$PWD/table/selectiontype.c \
-           $$PWD/table/sound.c \
-           $$PWD/table/structureinfo.c \
-           $$PWD/table/teamaction.c \
-           $$PWD/table/tilediff.c \
-           $$PWD/table/unitinfo.c \
-           $$PWD/table/widget.c \
-           $$PWD/table/widgetinfo.c \
-           $$PWD/table/windowdesc.c \
-           $$PWD/video/video_sdl.c \
+           $$PWD/script/scriptstructure.c \
+           $$PWD/script/scriptteam.c \
+           $$PWD/script/scriptunit.c \
+           $$PWD/table/tableactioninfo.c \
+           $$PWD/table/tableanimation.c \
+           $$PWD/table/tableexplosion.c \
+           $$PWD/table/tablefileinfo.c \
+           $$PWD/table/tablehouseanimation.c \
+           $$PWD/table/tablehouseinfo.c \
+           $$PWD/table/tablelandscapeinfo.c \
+           $$PWD/table/tablemovementtype.c \
+           $$PWD/table/tableselectiontype.c \
+           $$PWD/table/tablesound.c \
+           $$PWD/table/tablestructureinfo.c \
+           $$PWD/table/tableteamaction.c \
+           $$PWD/table/tabletilediff.c \
+           $$PWD/table/tableunitinfo.c \
+           $$PWD/table/tablewidget.c \
+           $$PWD/table/tablewidgetinfo.c \
+           $$PWD/table/tablewindowdesc.c \
 #           $$PWD/video/video_win32.c

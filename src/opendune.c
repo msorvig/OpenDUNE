@@ -2316,7 +2316,7 @@ static bool Unknown_25C4_000E()
 	return true;
 }
 
-#if defined(__APPLE__)
+#if defined(SDL_BUILD)
 int SDL_main(int argc, char **argv)
 #else
 int main(int argc, char **argv)

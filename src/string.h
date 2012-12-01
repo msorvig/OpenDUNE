@@ -5,6 +5,8 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include "types.h"
+
 extern const char * const g_languageSuffixes[];
 
 extern uint16 String_Decompress(char *source, char *dest);
