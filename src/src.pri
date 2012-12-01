@@ -39,6 +39,13 @@ LIBS += -L/opt/local/lib -lSDL -lSDLmain -framework CoreFoundation -framework Ap
 #none build
 #SOURCES +=  $$PWD/audio/dsp_none.c
 
+#Qt build
+#DEFINES += QT_BUILD
+#SOURCES +=  $$PWD/audio/dsp_none.c \
+#            $$PWD/video/video_qt.c \
+#            $$PWD/opendune_qt.cpp
+
+
 # Input
 HEADERS +=  $$PWD/animation.h \
             $$PWD/config.h \

@@ -2318,9 +2318,11 @@ static bool Unknown_25C4_000E()
 
 #if defined(SDL_BUILD)
 int SDL_main(int argc, char **argv)
+#elif defined (QT_BUILD)
+int qt_main(int argc, char **argv)
 #else
 int main(int argc, char **argv)
-#endif /* __APPLE__ */
+#endif
 {
 #if defined(_WIN32)
 	#if defined(__MINGW32__) && defined(__STRICT_ANSI__)
