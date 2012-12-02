@@ -12,39 +12,29 @@ DEPENDPATH += $$PWD/. \
               $$PWD/script \
               $$PWD/table \
               $$PWD/video
-INCLUDEPATH += $$PWD/. \
-               $$PWD/../include \
-               $$PWD/audio \
-               $$PWD/script \
-               $$PWD/os \
-               $$PWD/gui \
-               $$PWD/video \
-               $$PWD/pool \
-               $$PWD/table \
-               $$PWD/saveload \
-               $$PWD/crashlog \
-               $$PWD/input \
-               $$PWD/codec
+
+INCLUDEPATH +=  $$PWD/../include
 
 
+opendune_sdl_build {
+    DEFINES += SDL_BUILD
+    SOURCES +=  $$PWD/audio/dsp_sdl.c \
+                $$PWD/video/video_sdl.c
 
-# SDL build:
-DEFINES += SDL_BUILD
-SOURCES +=  $$PWD/audio/dsp_sdl.c \
-            $$PWD/video/video_sdl.c
-
-INCLUDEPATH += /opt/local/include/SDL/
-LIBS += -L/opt/local/lib -lSDL -lSDLmain -framework CoreFoundation -framework AppKit
+    INCLUDEPATH += /opt/local/include/SDL/
+    LIBS += -L/opt/local/lib -lSDL -lSDLmain -framework CoreFoundation -framework AppKit
+}
 
 #none build
 #SOURCES +=  $$PWD/audio/dsp_none.c
 
-#Qt build
-#DEFINES += QT_BUILD
-#SOURCES +=  $$PWD/audio/dsp_none.c \
-#            $$PWD/video/video_qt.c \
-#            $$PWD/opendune_qt.cpp
-
+opendune_qt_build {
+    DEFINES += QT_BUILD
+    HEADERS +=  $$PWD/opendune_qt.h
+    SOURCES +=  $$PWD/audio/dsp_none.c \
+                $$PWD/video/video_qt.c \
+                $$PWD/opendune_qt.cpp
+}
 
 # Input
 HEADERS +=  $$PWD/animation.h \

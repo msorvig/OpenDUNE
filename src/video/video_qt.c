@@ -10,6 +10,16 @@
 #include "../input/mouse.h"
 #include "../opendune.h"
 
+// Globals
+static uint8 s_gfx_screen8[SCREEN_WIDTH * SCREEN_HEIGHT]; // The current dune framebuffer
+
+
+// Interface to opendune_qt.cpp
+extern void qtLockMutex();
+extern void qtUnlockMutex();
+
+extern void qtFramebufferUpdate(unsigned char *s_gfx_screen8, int width, int height);
+extern void qtPaletteUpdate(unsigned char *palette, int from, int length);
 
 //Mouse_EventHandler(s_mousePosX / SCREEN_MAGNIFICATION, s_mousePosY / SCREEN_MAGNIFICATION, s_mouseButtonLeft, s_mouseButtonRight);
 // 	Input_EventHandler(key);
@@ -52,21 +62,24 @@ void Video_Uninit()
     puts("Video_Uninit");
 }
 
-/**
- * Because we rarely want to draw in 320x200, this function copies from the
- *  320x200 buffer to the real screen, scaling where needed.
- */
-void Video_DrawScreen()
-{
-    puts("Video_DrawScreen()");
-}
 
 /**
  * Runs every tick to handle video driver updates.
  */
 void Video_Tick()
 {
-   puts("Video_Tick()");
+    qtLockMutex();
+    puts("Video_Tick()");
+
+    // Process Events
+
+    // Push frame buffer update to Qt. (if it has changes)
+    if (memcmp(GFX_Screen_Get_ByIndex(0), s_gfx_screen8, SCREEN_WIDTH * SCREEN_HEIGHT) != 0) {
+        memcpy(s_gfx_screen8, GFX_Screen_Get_ByIndex(0), SCREEN_WIDTH * SCREEN_HEIGHT);
+        qtFramebufferUpdate(&s_gfx_screen8, SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
+
+    qtUnlockMutex();
 }
 
 /**
@@ -77,5 +90,6 @@ void Video_Tick()
  */
 void Video_SetPalette(void *palette, int from, int length)
 {
-   puts("Video_SetPalette()");
+    qtPaletteUpdate(palette, from, length);
+    puts("Video_SetPalette()");
 }
