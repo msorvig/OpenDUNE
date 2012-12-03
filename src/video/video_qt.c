@@ -1,4 +1,4 @@
-
+#include "../opendune_interface_qt.h"
 #include "types.h"
 #include "../os/error.h"
 
@@ -12,17 +12,6 @@
 
 // Globals
 static uint8 s_gfx_screen8[SCREEN_WIDTH * SCREEN_HEIGHT]; // The current dune framebuffer
-
-
-// Interface to opendune_qt.cpp
-extern void qtLockMutex();
-extern void qtUnlockMutex();
-
-extern void qtFramebufferUpdate(unsigned char *s_gfx_screen8, int width, int height);
-extern void qtPaletteUpdate(unsigned char *palette, int from, int length);
-
-//Mouse_EventHandler(s_mousePosX / SCREEN_MAGNIFICATION, s_mousePosY / SCREEN_MAGNIFICATION, s_mouseButtonLeft, s_mouseButtonRight);
-// 	Input_EventHandler(key);
 
 /**
  * Set the current position of the mouse.
@@ -62,24 +51,34 @@ void Video_Uninit()
     puts("Video_Uninit");
 }
 
-
 /**
  * Runs every tick to handle video driver updates.
  */
 void Video_Tick()
 {
-    qtLockMutex();
-    puts("Video_Tick()");
+    // puts("Video_Tick()");
 
+    qtLockMutex();
     // Process Events
+    while (qtHasEvent()) {
+        struct DuneEvent event = qtNextEvent();
+        qtUnlockMutex();
+        if (event.isKeyEvent) {
+            Input_EventHandler(event.key | (event.isPress ? 0x0 : 0x80));
+        } else {
+            Mouse_EventHandler(event.mouseX, event.mouseY, event.leftButton, event.rightButton);
+        }
+        qtLockMutex();
+    }
+    qtUnlockMutex();
 
     // Push frame buffer update to Qt. (if it has changes)
     if (memcmp(GFX_Screen_Get_ByIndex(0), s_gfx_screen8, SCREEN_WIDTH * SCREEN_HEIGHT) != 0) {
         memcpy(s_gfx_screen8, GFX_Screen_Get_ByIndex(0), SCREEN_WIDTH * SCREEN_HEIGHT);
+        qtLockMutex();
         qtFramebufferUpdate(&s_gfx_screen8, SCREEN_WIDTH, SCREEN_HEIGHT);
+        qtUnlockMutex();
     }
-
-    qtUnlockMutex();
 }
 
 /**
@@ -90,6 +89,9 @@ void Video_Tick()
  */
 void Video_SetPalette(void *palette, int from, int length)
 {
+    // puts("Video_SetPalette()");
+
+    qtLockMutex();
     qtPaletteUpdate(palette, from, length);
-    puts("Video_SetPalette()");
+    qtUnlockMutex();
 }

@@ -30,7 +30,9 @@ opendune_sdl_build {
 
 opendune_qt_build {
     DEFINES += QT_BUILD
-    HEADERS +=  $$PWD/opendune_qt.h
+    HEADERS +=  $$PWD/opendune_qt.h \
+                $$PWD/opendune_interface_qt.h
+
     SOURCES +=  $$PWD/audio/dsp_none.c \
                 $$PWD/video/video_qt.c \
                 $$PWD/opendune_qt.cpp
