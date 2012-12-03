@@ -138,7 +138,7 @@ void DuneWindow::keyPressEvent(QKeyEvent *event)
 {
     DuneEvent duneEvent;
     duneEvent.isKeyEvent = true;
-    duneEvent.key = translateKey(Qt::Key(event->key()));
+    duneEvent.key = translateKey(event->key());
     duneEvent.isPress = true;
     qtLockMutex();
     eventQueue.enqueue(duneEvent);
@@ -149,7 +149,7 @@ void DuneWindow::keyReleaseEvent(QKeyEvent *event)
 {
     DuneEvent duneEvent;
     duneEvent.isKeyEvent = true;
-    duneEvent.key = translateKey(Qt::Key(event->key()));
+    duneEvent.key = translateKey(event->key());
     duneEvent.isPress = false;
     qtLockMutex();
     eventQueue.enqueue(duneEvent);
@@ -176,7 +176,8 @@ extern "C" {
     {
        // qDebug() << "qtFramebufferUpdate" << width << height;
         QImage duneFrameBufferIndex8 = QImage(frameBuffer, width, height, QImage::Format_Indexed8);
-        duneFrameBuffer = duneFrameBufferIndex8.convertToFormat(QImage::Format_ARGB32_Premultiplied, dunePalette);
+        duneFrameBufferIndex8.setColorTable(dunePalette);
+        duneFrameBuffer = duneFrameBufferIndex8.convertToFormat(QImage::Format_ARGB32_Premultiplied);
         QMetaObject::invokeMethod(duneWindow, "render", Qt::QueuedConnection);
     }
 
@@ -185,16 +186,12 @@ extern "C" {
         if (dunePalette.size() != 256)
             dunePalette.resize(256);
 
-       // qDebug() << "qtPaletteUpdate" << from << length;
-
-        // ## que
-
-        /*for (int i = from; i < from + length; i++) {
+        for (int i = from; i < from + length; i++) {
             dunePalette[i] = qRgb(
-                        ((*palette+) & 0x3F) * 4,
+                        ((*palette++) & 0x3F) * 4,
                         ((*palette++) & 0x3F) * 4,
                         ((*palette++) & 0x3F) * 4);
-        }*/
+        }
     }
 
     bool qtHasEvent()
@@ -216,7 +213,7 @@ public:
     void run()
     {
         qDebug() << "Your battle for Dune begins...now.";
-        char **argv;
+        char **argv = 0;
         qt_main(0, argv);
     }
 };
@@ -224,6 +221,7 @@ public:
 int main(int argc, char** argv)
 {
     QGuiApplication app(argc, argv);
+    qApp->setOverrideCursor( QCursor( Qt::BlankCursor ) );
 
     // Create Dune Window
     DuneWindow window;
