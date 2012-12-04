@@ -25,7 +25,13 @@ void qtLockMutex();
 void qtUnlockMutex();
 
 void qtFramebufferUpdate(unsigned char *frameBuffer, int width, int height);
-extern void qtPaletteUpdate(unsigned char *palette, int from, int length);
+void qtPaletteUpdate(unsigned char *palette, int from, int length);
+
+void qtCreateSoundSystem();
+void qtDestroySoundSystem();
+void qtPlaySound(unsigned char *soundBuffer, int lenght, int frequency);
+void qtStopSound();
+bool qtIsPlaying();
 
 #ifdef __cplusplus
 }

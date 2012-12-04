@@ -29,11 +29,12 @@ opendune_sdl_build {
 #SOURCES +=  $$PWD/audio/dsp_none.c
 
 opendune_qt_build {
+    QT += multimedia
     DEFINES += QT_BUILD
     HEADERS +=  $$PWD/opendune_qt.h \
                 $$PWD/opendune_interface_qt.h
 
-    SOURCES +=  $$PWD/audio/dsp_none.c \
+    SOURCES +=  $$PWD/audio/dsp_qt.c \
                 $$PWD/video/video_qt.c \
                 $$PWD/opendune_qt.cpp
 }

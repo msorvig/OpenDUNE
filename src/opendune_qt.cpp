@@ -2,6 +2,7 @@
 #include "opendune_qt.h"
 
 #include <QtGui/QtGui>
+#include <QtMultimedia/QtMultimedia>
 
 #ifdef QT_BUILD
 
@@ -12,8 +13,13 @@ QMutex duneMutex;
 QVector<QRgb> dunePalette;
 QImage duneFrameBuffer;
 class DuneWindow;
-DuneWindow *duneWindow;
+DuneWindow *duneWindow = 0;
 QQueue<DuneEvent> eventQueue;
+
+QAudioOutput *output = 0;
+QByteArray *qtSoundCopy = 0;
+QBuffer *qtSoundBuffer = 0;
+
 
 // Qt to DOS key translation
 unsigned char translateKey(int qtKey)
@@ -168,9 +174,21 @@ void DuneWindow::render()
     backingStore->flush(rect);
 }
 
+// opendune_interface.h implementation. These are called from
+// the Dune thread.
 extern "C" {
     void qtLockMutex() { duneMutex.lock(); }
     void qtUnlockMutex() { duneMutex.unlock(); }
+
+    bool qtHasEvent()
+    {
+        return !eventQueue.isEmpty();
+    }
+
+    struct DuneEvent qtNextEvent()
+    {
+        return eventQueue.dequeue();
+    }
 
     void qtFramebufferUpdate(unsigned char *frameBuffer, int width, int height)
     {
@@ -194,14 +212,54 @@ extern "C" {
         }
     }
 
-    bool qtHasEvent()
+    void qtCreateSoundSystem()
     {
-        return !eventQueue.isEmpty();
+        QAudioFormat format = QAudioFormat();
+        format.setSampleRate(11025);
+        format.setSampleType(QAudioFormat::UnSignedInt);
+        format.setSampleSize(8);
+        format.setChannelCount(1);
+        format.setByteOrder(QAudioFormat::LittleEndian);
+        format.setCodec(QStringLiteral("audio/pcm"));
+
+        QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+        if (!info.isFormatSupported(format)) {
+            qWarning() << "Default format not supported - trying to use nearest";
+            format = info.nearestFormat(format);
+        }
+
+        if (!format.isValid())
+            qWarning() << "sound format not valid" << format.isValid();
+
+        output = new QAudioOutput(QAudioDeviceInfo::defaultOutputDevice(), format);
     }
 
-    struct DuneEvent qtNextEvent()
+    void qtDestroySoundSystem()
     {
-        return eventQueue.dequeue();
+        delete output;
+    }
+
+    void qtPlaySound(unsigned char *soundBuffer, int length, int frequency)
+    {
+        // qDebug() << "qtPlaySound" << length << frequency;
+        qtSoundCopy = new QByteArray((const char *)soundBuffer, length);
+        qtSoundBuffer = new QBuffer(qtSoundCopy);
+        qtSoundBuffer->open(QIODevice::ReadOnly);
+        output->start(qtSoundBuffer);
+    }
+
+    void qtStopSound()
+    {
+        output->stop();
+        delete qtSoundCopy;
+        qtSoundCopy = 0;
+        delete qtSoundBuffer;
+        qtSoundBuffer = 0;
+    }
+
+    bool qtIsPlaying()
+    {
+        return (output->state() & QAudio::ActiveState);
     }
 
     extern int qt_main(int argc, char **argv);  // opendune main entry point. Called by DuneThread below.
