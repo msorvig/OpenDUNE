@@ -3,6 +3,7 @@
 
 #include <QtGui/QtGui>
 #include <QtMultimedia/QtMultimedia>
+#include "qtmidi.h"
 
 #ifdef QT_BUILD
 
@@ -10,6 +11,7 @@
 
 // Globals
 QMutex duneMutex;
+QImage duneFrameBufferIndex8;
 QVector<QRgb> dunePalette;
 QImage duneFrameBuffer;
 class DuneWindow;
@@ -265,6 +267,27 @@ extern "C" {
     bool qtIsPlaying()
     {
         return (output->state() & QAudio::ActiveState);
+    }
+
+    bool qtCreateMidiSystem()
+    {
+        MIDI_Init("default", 0);
+        return MIDI_Available();
+    }
+
+    void qtDestroyMidiSystem()
+    {
+        MIDI_Destroy();
+    }
+
+    void qtMidiSend(unsigned int data)
+    {
+        MIDI_RawOutByte((unsigned char *)&data);
+    }
+
+    void qtMidiReset()
+    {
+
     }
 
     extern int qt_main(int argc, char **argv);  // opendune main entry point. Called by DuneThread below.

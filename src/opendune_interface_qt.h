@@ -33,6 +33,11 @@ void qtPlaySound(unsigned char *soundBuffer, int lenght, int frequency);
 void qtStopSound();
 bool qtIsPlaying();
 
+bool qtCreateMidiSystem();
+void qtDestroyMidiSystem();
+void qtMidiSend(unsigned int data);
+void qtMidiReset();
+
 #ifdef __cplusplus
 }
 #endif

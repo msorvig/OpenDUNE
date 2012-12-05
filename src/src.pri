@@ -35,8 +35,11 @@ opendune_qt_build {
                 $$PWD/opendune_interface_qt.h
 
     SOURCES +=  $$PWD/audio/dsp_qt.c \
+                $$PWD/audio/midi_qt.c \
                 $$PWD/video/video_qt.c \
                 $$PWD/opendune_qt.cpp
+
+    include(qtmidi/src/qtmidi.pri)
 }
 
 # Input
@@ -121,7 +124,7 @@ SOURCES += $$PWD/animation.c \
 #           $$PWD/audio/dsp_none.c \
 #           $$PWD/audio/dsp_win32.c \
 #           $$PWD/audio/midi_alsa.c \
-           $$PWD/audio/midi_none.c \
+#           $$PWD/audio/midi_none.c \
 #           $$PWD/audio/midi_win32.c \
            $$PWD/audio/mt32mpu.c \
            $$PWD/audio/sound.c \
