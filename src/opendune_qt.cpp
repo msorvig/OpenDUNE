@@ -94,6 +94,13 @@ struct DuneEvent createDuneMouseEvent(QMouseEvent *event)
     return duneEvent;
 }
 
+void updateFrameBuffer()
+{
+    duneFrameBufferIndex8.setColorTable(dunePalette);
+    duneFrameBuffer = duneFrameBufferIndex8.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QMetaObject::invokeMethod(duneWindow, "render", Qt::QueuedConnection);
+}
+
 // Dune Window implementation
 DuneWindow::DuneWindow()
 {
@@ -192,11 +199,8 @@ extern "C" {
 
     void qtFramebufferUpdate(unsigned char *frameBuffer, int width, int height)
     {
-       // qDebug() << "qtFramebufferUpdate" << width << height;
-        QImage duneFrameBufferIndex8 = QImage(frameBuffer, width, height, QImage::Format_Indexed8);
-        duneFrameBufferIndex8.setColorTable(dunePalette);
-        duneFrameBuffer = duneFrameBufferIndex8.convertToFormat(QImage::Format_ARGB32_Premultiplied);
-        QMetaObject::invokeMethod(duneWindow, "render", Qt::QueuedConnection);
+        duneFrameBufferIndex8 = QImage(frameBuffer, width, height, QImage::Format_Indexed8);
+        updateFrameBuffer();
     }
 
     void qtPaletteUpdate(unsigned char *palette, int from, int length)
@@ -210,6 +214,7 @@ extern "C" {
                         ((*palette++) & 0x3F) * 4,
                         ((*palette++) & 0x3F) * 4);
         }
+        updateFrameBuffer();
     }
 
     void qtCreateSoundSystem()
