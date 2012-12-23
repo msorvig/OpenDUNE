@@ -1,6 +1,6 @@
 TEMPLATE = app
 CONFIG -= app_bundle debug
-TAGET = bin/opendune
+TARGET = bin/opendune
 
 #CONFIG += opendune_sdl_build
 CONFIG += opendune_qt_build
