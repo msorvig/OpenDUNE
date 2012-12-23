@@ -1,5 +1,6 @@
 TEMPLATE = app
-CONFIG -= app_bundle debug
+CONFIG -= debug
+!ios:CONFIG -= app_bundle
 TARGET = bin/opendune
 
 #CONFIG += opendune_sdl_build
