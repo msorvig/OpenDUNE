@@ -1,6 +1,4 @@
-/* $Id$ */
-
-/** @file src/dsp_win32.c Windows implementation of the DSP. */
+/** @file src/audio/dsp_win32.c Windows implementation of the DSP. */
 
 #include <stdio.h>
 #include <windows.h>
@@ -16,7 +14,7 @@ static HWAVEOUT s_waveOut = NULL;
 static WAVEHDR s_waveHdr;
 static bool s_playing = false;
 
-void DSP_Stop()
+void DSP_Stop(void)
 {
 	if (s_waveOut == NULL) return;
 
@@ -28,7 +26,7 @@ void DSP_Stop()
 	s_playing = false;
 }
 
-void DSP_Uninit()
+void DSP_Uninit(void)
 {
 	if (!s_init) return;
 
@@ -40,7 +38,7 @@ void DSP_Uninit()
 	s_init = false;
 }
 
-bool DSP_Init()
+bool DSP_Init(void)
 {
 	s_init = true;
 	return true;
@@ -65,11 +63,11 @@ void DSP_Play(const uint8 *data)
 
 	DSP_Stop();
 
-	data += ((uint16 *)data)[10];
+	data += ((const uint16 *)data)[10];
 
 	if (*data != 1) return;
 
-	len = (*(uint32 *)data >> 8) - 2;
+	len = (*(const uint32 *)data >> 8) - 2;
 
 	if (s_dataLen < len) {
 		s_data = realloc(s_data, len);
@@ -110,7 +108,7 @@ void DSP_Play(const uint8 *data)
 	s_playing = true;
 }
 
-uint8 DSP_GetStatus()
+uint8 DSP_GetStatus(void)
 {
 	return s_playing ? 2 : 0;
 }

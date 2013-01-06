@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/opendune.c Gameloop and other main routines. */
 
 #if defined(_WIN32)
@@ -62,7 +60,7 @@
 #include "wsa.h"
 
 
-char *window_caption = "OpenDUNE - Pre v0.8";
+const char *window_caption = "OpenDUNE - Pre v0.8";
 
 bool g_dune2_enhanced = true; /*!< If false, the game acts exactly like the original Dune2, including bugs. */
 
@@ -116,12 +114,12 @@ static uint16 s_var_8052 = 0;
 static uint8 s_enableLog = 0; /*!< 0 = off, 1 = record game, 2 = playback game (stored in 'dune.log'). */
 static bool s_var_37B4;
 
-uint16 g_var_38BC = 0;
-bool g_var_38F8 = true;
+uint16 g_validateStrictIfZero = 0; /*!< 0 = strict validation, basically: no-cheat-mode. */
+bool g_running = true; /*!< true if game needs to keep running; false to stop the game. */
 uint16 g_selectionType = 0;
 uint16 g_selectionTypeNew = 0;
-bool g_viewport_forceRedraw = false;
-bool g_var_3A14 = false;
+bool g_viewport_forceRedraw = false; /*!< Force a full redraw of the screen. */
+bool g_viewport_fadein = false; /*!< Fade in the screen. */
 
 int16 g_musicInBattle = 0; /*!< 0 = no battle, 1 = fight is going on, -1 = music of fight is going on is active. */
 
@@ -130,7 +128,7 @@ int16 g_musicInBattle = 0; /*!< 0 = no battle, 1 = fight is going on, -1 = music
  *
  * @return True if and only if the level has come to an end.
  */
-static bool GameLoop_IsLevelFinished()
+static bool GameLoop_IsLevelFinished(void)
 {
 	bool finish = false;
 
@@ -199,7 +197,7 @@ static bool GameLoop_IsLevelFinished()
  *
  * @return True if and only if the level has been won by the human.
  */
-static bool GameLoop_IsLevelWon()
+static bool GameLoop_IsLevelWon(void)
 {
 	bool win = false;
 
@@ -286,7 +284,7 @@ static void GameLoop_PrepareAnimation(const HouseAnimation_Animation *animation,
 
 	Font_Select(g_fontIntro);
 
-	GFX_Screen_SetActive(0);
+	GFX_Screen_SetActive(SCREEN_0);
 
 	memcpy(s_palettePartTarget, &g_palette1[(144 + s_houseAnimation_subtitle->colour * 16) * 3], 6 * 3);
 
@@ -307,23 +305,23 @@ static void GameLoop_PrepareAnimation(const HouseAnimation_Animation *animation,
  * Clears the given memory block.
  * @param index The memory block.
  */
-static void Memory_ClearBlock(uint16 index)
+static void Memory_ClearBlock(Screen index)
 {
 	memset(GFX_Screen_Get_ByIndex(index), 0, GFX_Screen_GetSize_ByIndex(index));
 }
 
-static void GameLoop_FinishAnimation()
+static void GameLoop_FinishAnimation(void)
 {
 	GUI_DrawText_Wrapper(NULL, 0, 0, 0, 0, 0x1);
 	GUI_DrawText_Wrapper(NULL, 0, 0, 0, 0, 0x2);
 
 	GUI_SetPaletteAnimated(g_palette2, 60);
 
-	GUI_ClearScreen(0);
+	GUI_ClearScreen(SCREEN_0);
 
 	Input_History_Clear();
 
-	Memory_ClearBlock(7);
+	Memory_ClearBlock(SCREEN_3);
 }
 
 static void GameLoop_PlaySoundEffect(uint8 animation)
@@ -505,7 +503,7 @@ static uint16 GameLoop_PalettePart_Update(bool finishNow)
 	return s_palettePartDirection;
 }
 
-static void GameLoop_PlayAnimation()
+static void GameLoop_PlayAnimation(void)
 {
 	const HouseAnimation_Animation *animation;
 	uint8 animationMode = 0;
@@ -549,16 +547,16 @@ static void GameLoop_PlayAnimation()
 			}
 
 			if ((animation->flags & 0x480) != 0) {
-				GUI_ClearScreen(3);
+				GUI_ClearScreen(SCREEN_1);
 
-				wsa = GFX_Screen_Get_ByIndex(5);
+				wsa = GFX_Screen_Get_ByIndex(SCREEN_2);
 
-				loc24 = GFX_Screen_GetSize_ByIndex(5) + GFX_Screen_GetSize_ByIndex(6);
+				loc24 = GFX_Screen_GetSize_ByIndex(SCREEN_2) + GFX_Screen_GetSize_ByIndex(SCREEN_3);
 				loc20 = false;
 			} else {
-				wsa = GFX_Screen_Get_ByIndex(3);
+				wsa = GFX_Screen_Get_ByIndex(SCREEN_1);
 
-				loc24 = GFX_Screen_GetSize_ByIndex(3) + GFX_Screen_GetSize_ByIndex(5) + GFX_Screen_GetSize_ByIndex(6);
+				loc24 = GFX_Screen_GetSize_ByIndex(SCREEN_1) + GFX_Screen_GetSize_ByIndex(SCREEN_2) + GFX_Screen_GetSize_ByIndex(SCREEN_3);
 			}
 
 			snprintf(filenameBuffer, sizeof(filenameBuffer), "%s.WSA", animation->string);
@@ -578,7 +576,7 @@ static void GameLoop_PlayAnimation()
 
 		if ((animation->flags & 0x4) != 0) {
 			GameLoop_PlaySubtitle(animationMode);
-			WSA_DisplayFrame(wsa, frame++, posX, posY, 0);
+			WSA_DisplayFrame(wsa, frame++, posX, posY, SCREEN_0);
 			GameLoop_PalettePart_Update(true);
 
 			memcpy(&g_palette1[215 * 3], s_palettePartCurrent, 18);
@@ -589,13 +587,13 @@ static void GameLoop_PlayAnimation()
 		} else {
 			if ((animation->flags & 0x480) != 0) {
 				GameLoop_PlaySubtitle(animationMode);
-				WSA_DisplayFrame(wsa, frame++, posX, posY, 2);
+				WSA_DisplayFrame(wsa, frame++, posX, posY, SCREEN_1);
 				locdi++;
 
 				if ((animation->flags & 0x480) == 0x80) {
-					GUI_Screen_FadeIn2(8, 24, 304, 120, 2, 0, 1, false);
+					GUI_Screen_FadeIn2(8, 24, 304, 120, SCREEN_1, SCREEN_0, 1, false);
 				} else if ((animation->flags & 0x480) == 0x400) {
-					GUI_Screen_FadeIn(1, 24, 1, 24, 38, 120, 2, 0);
+					GUI_Screen_FadeIn(1, 24, 1, 24, 38, 120, SCREEN_1, SCREEN_0);
 				}
 			}
 		}
@@ -637,7 +635,7 @@ static void GameLoop_PlayAnimation()
 			g_timerTimeout = loc18;
 
 			GameLoop_PlaySubtitle(animationMode);
-			WSA_DisplayFrame(wsa, frame++, posX, posY, 0);
+			WSA_DisplayFrame(wsa, frame++, posX, posY, SCREEN_0);
 
 			if (mode == 1 && frame == loc04) {
 				frame = 0;
@@ -660,7 +658,7 @@ static void GameLoop_PlayAnimation()
 			bool displayed;
 			do {
 				GameLoop_PlaySubtitle(animationMode);
-				displayed = WSA_DisplayFrame(wsa, frame++, posX, posY, 0);
+				displayed = WSA_DisplayFrame(wsa, frame++, posX, posY, SCREEN_0);
 			} while (displayed);
 		}
 
@@ -691,7 +689,7 @@ static void GameLoop_PlayAnimation()
 	}
 }
 
-static void GameLoop_LevelEndAnimation()
+static void GameLoop_LevelEndAnimation(void)
 {
 	const HouseAnimation_Animation *animation;
 	const HouseAnimation_Subtitle *subtitle;
@@ -761,7 +759,7 @@ static void GameLoop_LevelEndAnimation()
 	GameLoop_FinishAnimation();
 }
 
-static void GameLoop_Uninit()
+static void GameLoop_Uninit(void)
 {
 	while (g_widgetLinkedListHead != NULL) {
 		Widget *w = g_widgetLinkedListHead;
@@ -781,11 +779,11 @@ static void GameLoop_Uninit()
 	free(g_paletteMapping2); g_paletteMapping2 = NULL;
 }
 
-static void GameCredits_SwapScreen(uint16 top, uint16 height, uint16 screenID, void *buffer)
+static void GameCredits_SwapScreen(uint16 top, uint16 height, Screen screenID, void *buffer)
 {
 	uint16 *b = (uint16 *)buffer;
 	uint16 *screen1 = (uint16 *)GFX_Screen_Get_ByIndex(screenID) + top * SCREEN_WIDTH / 2;
-	uint16 *screen2 = (uint16 *)GFX_Screen_Get_ByIndex(0) + top * SCREEN_WIDTH / 2;
+	uint16 *screen2 = (uint16 *)GFX_Screen_Get_ByIndex(SCREEN_0) + top * SCREEN_WIDTH / 2;
 	uint16 count = height * SCREEN_WIDTH / 2;
 
 	while (count-- != 0) {
@@ -800,7 +798,7 @@ static void GameCredits_SwapScreen(uint16 top, uint16 height, uint16 screenID, v
 	}
 }
 
-static void GameCredits_Play(char *data, uint16 windowID, uint16 memory, uint16 screenID, uint16 delay)
+static void GameCredits_Play(char *data, uint16 windowID, Screen memory, Screen screenID, uint16 delay)
 {
 	uint16 loc02;
 	uint16 stringCount = 0;
@@ -843,12 +841,12 @@ static void GameCredits_Play(char *data, uint16 windowID, uint16 memory, uint16 
 	positions[5].x = 0;
 	positions[5].y = spriteY;
 
-	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, 0, memory);
+	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, SCREEN_0, memory);
 	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, memory, screenID);
 
 	GameCredits_SwapScreen(g_curWidgetYBase, g_curWidgetHeight, memory, s_buffer_182E);
 
-	GFX_Screen_SetActive(0);
+	GFX_Screen_SetActive(SCREEN_0);
 	loc0C = g_timerSleep;
 
 	Input_History_Clear();
@@ -969,7 +967,7 @@ static void GameCredits_Play(char *data, uint16 windowID, uint16 memory, uint16 
 
 				GUI_DrawText(strings[loc02].text, strings[loc02].x, strings[loc02].y + g_curWidgetYBase, 255, 0);
 
-				GFX_Screen_SetActive(0);
+				GFX_Screen_SetActive(SCREEN_0);
 			}
 
 			strings[loc02].y--;
@@ -995,17 +993,17 @@ static void GameCredits_Play(char *data, uint16 windowID, uint16 memory, uint16 
 
 	GUI_SetPaletteAnimated(g_palette2, 120);
 
-	GUI_ClearScreen(0);
+	GUI_ClearScreen(SCREEN_0);
 	GUI_ClearScreen(memory);
 	GUI_ClearScreen(screenID);
 }
 
-static void GameCredits_LoadPalette()
+static void GameCredits_LoadPalette(void)
 {
 	uint16 i;
 	uint8 *p;
 
-	s_buffer_182E = GFX_Screen_Get_ByIndex(7);
+	s_buffer_182E = GFX_Screen_Get_ByIndex(SCREEN_3);
 	s_buffer_1832 = (uint8 *)s_buffer_182E + SCREEN_WIDTH * g_curWidgetHeight;
 
 	g_palette1 = malloc(256 * 3 * 10);
@@ -1030,7 +1028,7 @@ static void GameCredits_LoadPalette()
 /**
  * Shows the game credits.
  */
-static void GameLoop_GameCredits()
+static void GameLoop_GameCredits(void)
 {
 	static const uint8 colours[] = {0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -1041,11 +1039,11 @@ static void GameLoop_GameCredits()
 
 	Widget_SetCurrentWidget(20);
 
-	Sprites_LoadImage("BIGPLAN.CPS", 3, g_palette_998A);
+	Sprites_LoadImage("BIGPLAN.CPS", SCREEN_1, g_palette_998A);
 
-	GUI_ClearScreen(0);
+	GUI_ClearScreen(SCREEN_0);
 
-	GUI_Screen_Copy(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, 2, 0);
+	GUI_Screen_Copy(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, SCREEN_1, SCREEN_0);
 
 	GUI_SetPaletteAnimated(g_palette_998A, 60);
 
@@ -1055,7 +1053,7 @@ static void GameLoop_GameCredits()
 
 	Music_Play(33);
 
-	memory = GFX_Screen_Get_ByIndex(5);
+	memory = GFX_Screen_Get_ByIndex(SCREEN_2);
 
 	for (i = 0; i < 256; i++) {
 		uint8 loc06;
@@ -1071,11 +1069,11 @@ static void GameLoop_GameCredits()
 		}
 	}
 
-	Sprites_LoadImage("MAPPLAN.CPS", 3, g_palette_998A);
+	Sprites_LoadImage("MAPPLAN.CPS", SCREEN_1, g_palette_998A);
 
-	GUI_Palette_RemapScreen(g_curWidgetXBase << 3, g_curWidgetYBase, g_curWidgetWidth << 3, g_curWidgetHeight, 2, memory);
+	GUI_Palette_RemapScreen(g_curWidgetXBase << 3, g_curWidgetYBase, g_curWidgetWidth << 3, g_curWidgetHeight, SCREEN_1, memory);
 
-	GUI_Screen_FadeIn2(g_curWidgetXBase << 3, g_curWidgetYBase, g_curWidgetWidth << 3, g_curWidgetHeight, 2, 0, 1, false);
+	GUI_Screen_FadeIn2(g_curWidgetXBase << 3, g_curWidgetYBase, g_curWidgetWidth << 3, g_curWidgetHeight, SCREEN_1, SCREEN_0, 1, false);
 
 	GameCredits_LoadPalette();
 
@@ -1087,15 +1085,14 @@ static void GameLoop_GameCredits()
 
 	GFX_SetPalette(g_palette1);
 
-	while (true) {
-		File_ReadBlockFile(String_GenerateFilename("CREDITS"), s_buffer_1832, GFX_Screen_GetSize_ByIndex(6));
+	for (;; sleepIdle()) {
+		File_ReadBlockFile(String_GenerateFilename("CREDITS"), s_buffer_1832, GFX_Screen_GetSize_ByIndex(SCREEN_3));
 
-		GameCredits_Play(s_buffer_1832, 20, 2, 4, 6);
+		GameCredits_Play(s_buffer_1832, 20, SCREEN_1, SCREEN_2, 6);
 
 		if (Input_Keyboard_NextKey() != 0) break;
 
 		Music_Play(33);
-		sleepIdle();
 	}
 
 	GUI_SetPaletteAnimated(g_palette2, 60);
@@ -1108,7 +1105,7 @@ static void GameLoop_GameCredits()
 /**
  * Shows the end game "movie"
  */
-static void GameLoop_GameEndAnimation()
+static void GameLoop_GameEndAnimation(void)
 {
 	const HouseAnimation_Animation *animation;
 	const HouseAnimation_Subtitle *subtitle;
@@ -1158,7 +1155,7 @@ static void GameLoop_GameEndAnimation()
  * Checks if the level comes to an end. If so, it shows all end-level stuff,
  *  and prepares for the next level.
  */
-static void GameLoop_LevelEnd()
+static void GameLoop_LevelEnd(void)
 {
 	static uint32 levelEndTimer = 0;
 
@@ -1192,7 +1189,7 @@ static void GameLoop_LevelEnd()
 				GUI_Mouse_Hide_Safe();
 
 				GUI_SetPaletteAnimated(g_palette2, 15);
-				GUI_ClearScreen(0);
+				GUI_ClearScreen(SCREEN_0);
 				GameLoop_GameEndAnimation();
 				PrepareEnd();
 				exit(0);
@@ -1240,13 +1237,13 @@ static void GameLoop_LevelEnd()
 /**
  * Logos at begin of intro.
  */
-static void Gameloop_Logos()
+static void Gameloop_Logos(void)
 {
-	uint16 oldScreenID;
+	Screen oldScreenID;
 	void *wsa;
 	uint16 frame;
 
-	oldScreenID = GFX_Screen_SetActive(0);
+	oldScreenID = GFX_Screen_SetActive(SCREEN_0);
 
 	GFX_SetPalette(g_palette2);
 	GFX_ClearScreen();
@@ -1254,8 +1251,8 @@ static void Gameloop_Logos()
 	File_ReadBlockFile("WESTWOOD.PAL", g_palette_998A, 256 * 3);
 
 	frame = 0;
-	wsa = WSA_LoadFile("WESTWOOD.WSA", GFX_Screen_Get_ByIndex(3), GFX_Screen_GetSize_ByIndex(3) + GFX_Screen_GetSize_ByIndex(5) + GFX_Screen_GetSize_ByIndex(6), true);
-	WSA_DisplayFrame(wsa, frame++, 0, 0, 0);
+	wsa = WSA_LoadFile("WESTWOOD.WSA", GFX_Screen_Get_ByIndex(SCREEN_1), GFX_Screen_GetSize_ByIndex(SCREEN_1) + GFX_Screen_GetSize_ByIndex(SCREEN_2) + GFX_Screen_GetSize_ByIndex(SCREEN_3), true);
+	WSA_DisplayFrame(wsa, frame++, 0, 0, SCREEN_0);
 
 	GUI_SetPaletteAnimated(g_palette_998A, 60);
 
@@ -1264,14 +1261,12 @@ static void Gameloop_Logos()
 	g_timerTimeout = 360;
 
 	while (true) {
-		uint32 loc04;
 		bool displayed;
 
-		displayed = WSA_DisplayFrame(wsa, frame++, 0, 0, 0);
+		displayed = WSA_DisplayFrame(wsa, frame++, 0, 0, SCREEN_0);
 		if (!displayed) break;
 
-		loc04 = g_timerGUI + 6;
-		while (loc04 > g_timerGUI) sleepIdle();
+		Timer_Sleep(6);
 	}
 
 	WSA_Unload(wsa);
@@ -1284,15 +1279,12 @@ static void Gameloop_Logos()
 		}
 	}
 
-	while (g_timerTimeout != 0) {
-		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) {
-			sleepIdle();
-			continue;
-		}
+	for (; g_timerTimeout != 0; sleepIdle()) {
+		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) continue;
 
 		GUI_SetPaletteAnimated(g_palette2, 30);
 
-		GUI_ClearScreen(0);
+		GUI_ClearScreen(SCREEN_0);
 
 		GFX_Screen_SetActive(oldScreenID);
 		return;
@@ -1302,15 +1294,12 @@ static void Gameloop_Logos()
 
 	while (Driver_Music_IsPlaying()) sleepIdle();
 
-	while (g_timerTimeout != 0) {
-		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) {
-			sleepIdle();
-			continue;
-		}
+	for (; g_timerTimeout != 0; sleepIdle()) {
+		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) continue;
 
 		GUI_SetPaletteAnimated(g_palette2, 30);
 
-		GUI_ClearScreen(0);
+		GUI_ClearScreen(SCREEN_0);
 
 		GFX_Screen_SetActive(oldScreenID);
 		return;
@@ -1320,22 +1309,18 @@ static void Gameloop_Logos()
 
 	GFX_ClearScreen();
 
-	Sprites_LoadImage(String_GenerateFilename("AND"), 2, g_palette_998A);
+	Sprites_LoadImage(String_GenerateFilename("AND"), SCREEN_1, g_palette_998A);
 
-	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, 2, 0);
+	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, SCREEN_1, SCREEN_0);
 
 	GUI_SetPaletteAnimated(g_palette_998A, 30);
 
-	g_timerTimeout = 60;
-	while (g_timerTimeout != 0) {
-		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) {
-			sleepIdle();
-			continue;
-		}
+	for (g_timerTimeout = 60; g_timerTimeout != 0; sleepIdle()) {
+		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) continue;
 
 		GUI_SetPaletteAnimated(g_palette2, 30);
 
-		GUI_ClearScreen(0);
+		GUI_ClearScreen(SCREEN_0);
 
 		GFX_Screen_SetActive(oldScreenID);
 		return;
@@ -1343,27 +1328,28 @@ static void Gameloop_Logos()
 
 	GUI_SetPaletteAnimated(g_palette2, 30);
 
-	GUI_ClearScreen(0);
+	GUI_ClearScreen(SCREEN_0);
 
-	Sprites_LoadImage("VIRGIN.CPS", 2, g_palette_998A);
+	Sprites_LoadImage("VIRGIN.CPS", SCREEN_1, g_palette_998A);
 
-	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, 2, 0);
+	GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, SCREEN_1, SCREEN_0);
 
 	GUI_SetPaletteAnimated(g_palette_998A, 30);
 
-	g_timerTimeout = 180;
-	while (g_timerTimeout != 0) {
-		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) {
-			sleepIdle();
-			continue;
-		}
+	for (g_timerTimeout = 180; g_timerTimeout != 0; sleepIdle()) {
+		if (Input_Keyboard_NextKey() == 0 || !s_var_37B4) continue;
 
-		break;
+		GUI_SetPaletteAnimated(g_palette2, 30);
+
+		GUI_ClearScreen(SCREEN_0);
+
+		GFX_Screen_SetActive(oldScreenID);
+		return;
 	}
 
 	GUI_SetPaletteAnimated(g_palette2, 30);
 
-	GUI_ClearScreen(0);
+	GUI_ClearScreen(SCREEN_0);
 
 	GFX_Screen_SetActive(oldScreenID);
 }
@@ -1371,7 +1357,7 @@ static void Gameloop_Logos()
 /**
  * The Intro.
  */
-static void GameLoop_GameIntroAnimation()
+static void GameLoop_GameIntroAnimation(void)
 {
 	GUI_ChangeSelectionType(SELECTIONTYPE_INTRO);
 
@@ -1603,7 +1589,7 @@ static uint16 GameLoop_HandleEvents(uint16 arg06, char **strings, uint32 arg10, 
 	return result;
 }
 
-static void Window_WidgetClick_Create()
+static void Window_WidgetClick_Create(void)
 {
 	WidgetInfo *wi;
 
@@ -1624,7 +1610,7 @@ static void Window_WidgetClick_Create()
 	}
 }
 
-static void ReadProfileIni(char *filename)
+static void ReadProfileIni(const char *filename)
 {
 	char *source;
 	char *key;
@@ -1635,10 +1621,10 @@ static void ReadProfileIni(char *filename)
 	if (filename == NULL) return;
 	if (!File_Exists(filename)) return;
 
-	source = GFX_Screen_Get_ByIndex(3);
+	source = GFX_Screen_Get_ByIndex(SCREEN_1);
 
 	memset(source, 0, 32000);
-	File_ReadBlockFile(filename, source, GFX_Screen_GetSize_ByIndex(3));
+	File_ReadBlockFile(filename, source, GFX_Screen_GetSize_ByIndex(SCREEN_1));
 
 	keys = source + strlen(source) + 5000;
 	*keys = '\0';
@@ -1722,10 +1708,10 @@ static void ReadProfileIni(char *filename)
 
 			if (strcasecmp(ui->o.name, key) != 0) continue;
 
-			ui->damage       = damage;
-			ui->movingSpeed  = movingSpeed;
-			ui->fireDelay    = fireDelay;
-			ui->fireDistance = fireDistance;
+			ui->damage            = damage;
+			ui->movingSpeedFactor = movingSpeed;
+			ui->fireDelay         = fireDelay;
+			ui->fireDistance      = fireDistance;
 			break;
 		}
 	}
@@ -1735,7 +1721,7 @@ static void ReadProfileIni(char *filename)
 	for (locsi = 0; locsi < UNIT_MAX; locsi++) {
 		const UnitInfo *ui = &g_table_unitInfo[locsi];
 
-		sprintf(buffer, "%*s%4d,%4d,%4d,%4d", 15 - (int)strlen(ui->o.name), "", ui->fireDistance, ui->damage, ui->fireDelay, ui->movingSpeed);
+		sprintf(buffer, "%*s%4d,%4d,%4d,%4d", 15 - (int)strlen(ui->o.name), "", ui->fireDistance, ui->damage, ui->fireDelay, ui->movingSpeedFactor);
 		Ini_SetString("combat", ui->o.name, buffer, source);
 	}
 }
@@ -1743,7 +1729,7 @@ static void ReadProfileIni(char *filename)
 /**
  * Intro menu.
  */
-static void GameLoop_GameIntroAnimationMenu()
+static void GameLoop_GameIntroAnimationMenu(void)
 {
 	static const uint16 mainMenuStrings[][6] = {
 		{STR_PLAY_A_GAME, STR_REPLAY_INTRODUCTION, STR_EXIT_GAME, STR_NULL,         STR_NULL,         STR_NULL}, /* Neither HOF nor save. */
@@ -1755,9 +1741,11 @@ static void GameLoop_GameIntroAnimationMenu()
 	bool loc02 = false;
 	bool loc06;
 
+	Input_Flags_SetBits(INPUT_FLAG_KEY_REPEAT | INPUT_FLAG_UNKNOWN_0010 | INPUT_FLAG_UNKNOWN_0200 |
+	                    INPUT_FLAG_UNKNOWN_2000);
 	Input_Flags_ClearBits(INPUT_FLAG_KEY_RELEASE | INPUT_FLAG_UNKNOWN_0400 | INPUT_FLAG_UNKNOWN_0100 |
 	                      INPUT_FLAG_UNKNOWN_0080 | INPUT_FLAG_UNKNOWN_0040 | INPUT_FLAG_UNKNOWN_0020 |
-	                      INPUT_FLAG_UNKNOWN_0008 | INPUT_FLAG_UNKNOWN_0004 | INPUT_FLAG_UNKNOWN_0002);
+	                      INPUT_FLAG_UNKNOWN_0008 | INPUT_FLAG_UNKNOWN_0004 | INPUT_FLAG_NO_TRANSLATE);
 
 	Timer_SetTimer(TIMER_GUI, true);
 
@@ -1765,10 +1753,6 @@ static void GameLoop_GameIntroAnimationMenu()
 	g_scenarioID = 1;
 	g_playerHouseID = HOUSE_INVALID;
 	g_debugScenario = false;
-	g_table_landscapeInfo[LST_SPICE].radarColour = 0xD7;
-	g_table_landscapeInfo[LST_SPICE].spriteID = 0x35;
-	g_table_landscapeInfo[LST_THICK_SPICE].radarColour = 0xD8;
-	g_table_landscapeInfo[LST_THICK_SPICE].spriteID = 0x35;
 	g_selectionType = SELECTIONTYPE_MENTAT;
 	g_selectionTypeNew = SELECTIONTYPE_MENTAT;
 
@@ -1786,7 +1770,7 @@ static void GameLoop_GameIntroAnimationMenu()
 
 	memmove(g_palette1, g_palette_998A, 256 * 3);
 
-	GUI_ClearScreen(0);
+	GUI_ClearScreen(SCREEN_0);
 
 	Video_SetPalette(g_palette1, 0, 256);
 
@@ -1846,7 +1830,7 @@ static void GameLoop_GameIntroAnimationMenu()
 
 		stringID = STR_REPLAY_INTRODUCTION;
 
-		while (true) {
+		for (;; sleepIdle()) {
 			char *strings[6];
 
 			switch (stringID) {
@@ -1906,7 +1890,7 @@ static void GameLoop_GameIntroAnimationMenu()
 				case STR_LOAD_GAME:
 					GUI_Mouse_Hide_Safe();
 					GUI_SetPaletteAnimated(g_palette2, 30);
-					GUI_ClearScreen(0);
+					GUI_ClearScreen(SCREEN_0);
 					GUI_Mouse_Show_Safe();
 
 					GFX_SetPalette(g_palette1);
@@ -1960,13 +1944,13 @@ static void GameLoop_GameIntroAnimationMenu()
 				g_widgetProperties[13].yBase  = 160 - ((g_widgetProperties[21].height * g_fontCurrent->height) >> 1);
 				g_widgetProperties[13].height = (g_widgetProperties[21].height * g_fontCurrent->height) + 11;
 
-				Sprites_LoadImage(String_GenerateFilename("TITLE"), 3, NULL);
+				Sprites_LoadImage(String_GenerateFilename("TITLE"), SCREEN_1, NULL);
 
 				GUI_Mouse_Hide_Safe();
 
-				GUI_ClearScreen(0);
+				GUI_ClearScreen(SCREEN_0);
 
-				GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, 2, 0);
+				GUI_Screen_Copy(0, 0, 0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT, SCREEN_1, SCREEN_0);
 
 				GUI_SetPaletteAnimated(g_palette1, 30);
 
@@ -1996,8 +1980,6 @@ static void GameLoop_GameIntroAnimationMenu()
 			GUI_PaletteAnimate();
 
 			if (stringID == STR_PLAY_A_GAME) break;
-
-			sleepIdle();
 		}
 	} else {
 		Music_Play(0);
@@ -2018,7 +2000,7 @@ static void GameLoop_GameIntroAnimationMenu()
 
 		GUI_SetPaletteAnimated(g_palette2, 15);
 
-		GUI_ClearScreen(0);
+		GUI_ClearScreen(SCREEN_0);
 	}
 
 	Input_History_Clear();
@@ -2126,7 +2108,7 @@ static void InGame_Numpad_Move(uint16 key)
 /**
  * Main game loop.
  */
-static void GameLoop_Main()
+static void GameLoop_Main(void)
 {
 	static uint32 l_timerNext = 0;
 	static uint32 l_timerUnitStatus = 0;
@@ -2145,7 +2127,7 @@ static void GameLoop_Main()
 
 	Music_Play(Tools_RandomLCG_Range(0, 5) + 8);
 
-	while (true) {
+	for (;; sleepIdle()) {
 		if (g_gameMode == GM_PICKHOUSE) {
 			Music_Play(28);
 
@@ -2154,7 +2136,7 @@ static void GameLoop_Main()
 
 			GUI_Mouse_Hide_Safe();
 
-			Memory_ClearBlock(1);
+			Memory_ClearBlock(SCREEN_0);
 
 			Sprites_LoadTiles();
 
@@ -2216,7 +2198,7 @@ static void GameLoop_Main()
 			}
 		}
 
-		GFX_Screen_SetActive(0);
+		GFX_Screen_SetActive(SCREEN_0);
 
 		key = GUI_Widget_HandleEvents(g_widgetLinkedListHead);
 
@@ -2243,18 +2225,16 @@ static void GameLoop_Main()
 			GameLoop_Structure();
 			GameLoop_House();
 
-			GUI_DrawScreen(0);
+			GUI_DrawScreen(SCREEN_0);
 		}
 
 		GUI_DisplayText(NULL, 0);
 
-		if (g_var_38F8 && !g_debugScenario) {
+		if (g_running && !g_debugScenario) {
 			GameLoop_LevelEnd();
 		}
 
-		if (!g_var_38F8) break;
-
-		sleepIdle();
+		if (!g_running) break;
 	}
 
 	GUI_Mouse_Hide_Safe();
@@ -2265,14 +2245,14 @@ static void GameLoop_Main()
 
 	Widget_SetCurrentWidget(0);
 
-	GFX_Screen_SetActive(2);
+	GFX_Screen_SetActive(SCREEN_1);
 
 	GFX_ClearScreen();
 
-	GUI_Screen_FadeIn(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, 2, 0);
+	GUI_Screen_FadeIn(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, SCREEN_1, SCREEN_0);
 }
 
-static bool Unknown_25C4_000E()
+static bool Unknown_25C4_000E(void)
 {
 	Timer_Init();
 
@@ -2369,14 +2349,14 @@ int main(int argc, char **argv)
  * Prepare the map (after loading scenario or savegame). Does some basic
  *  sanity-check and corrects stuff all over the place.
  */
-void Game_Prepare()
+void Game_Prepare(void)
 {
 	PoolFindStruct find;
 	uint16 oldSelectionType;
 	Tile *t;
 	int i;
 
-	g_var_38BC++;
+	g_validateStrictIfZero++;
 
 	oldSelectionType = g_selectionType;
 	g_selectionType = SELECTIONTYPE_MENTAT;
@@ -2483,14 +2463,14 @@ void Game_Prepare()
 	g_playerCredits = 0xFFFF;
 
 	g_selectionType = oldSelectionType;
-	g_var_38BC--;
+	g_validateStrictIfZero--;
 }
 
 /**
  * Initialize a game, by setting most variables to zero, cleaning the map, etc
  *  etc.
  */
-void Game_Init()
+void Game_Init(void)
 {
 	Unit_Init();
 	Structure_Init();
@@ -2538,7 +2518,7 @@ void Game_LoadScenario(uint8 houseID, uint16 scenarioID)
 
 	Game_Init();
 
-	g_var_38BC++;
+	g_validateStrictIfZero++;
 
 	if (!Scenario_Load(scenarioID, houseID)) {
 		GUI_DisplayModalMessage("No more scenarios!", 0xFFFF);
@@ -2554,14 +2534,14 @@ void Game_LoadScenario(uint8 houseID, uint16 scenarioID)
 		g_hintsShown2 = 0;
 	}
 
-	g_var_38BC--;
+	g_validateStrictIfZero--;
 }
 
 /**
  * Close down facilities used by the program. Always called just before the
  *  program terminates.
  */
-void PrepareEnd()
+void PrepareEnd(void)
 {
 	free(g_palette_998A); g_palette_998A = NULL;
 

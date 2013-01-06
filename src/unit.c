@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/unit.c %Unit routines. */
 
 #include <assert.h>
@@ -16,6 +14,7 @@
 #include "animation.h"
 #include "audio/sound.h"
 #include "config.h"
+#include "explosion.h"
 #include "gui/gui.h"
 #include "gui/widget.h"
 #include "house.h"
@@ -96,26 +95,33 @@ static void Unit_Rotate(Unit *unit, uint16 level)
 	Unit_UpdateMap(2, unit);
 }
 
-void Unit_MovementTick(Unit *unit)
+static void Unit_MovementTick(Unit *unit)
 {
 	uint16 speed;
 
-	if (unit->speed == 0) return;
+	if (unit->speed == 0 && unit->speedSub == 0) return;
 
-	speed = unit->speedRemainder;
-	speed += Tools_AdjustToGameSpeed(unit->speedPerTick, 1, 255, false);
+	/* Calculate the speed per tick */
+	speed = unit->speed * 16;
+	speed += unit->speedSub;
 
-	if ((speed & 0xFF00) != 0) {
-		Unit_Move(unit, min(unit->speed * 16, Tile_GetDistance(unit->o.position, unit->currentDestination) + 16));
+	/* Units in the air don't feel the effect of gameSpeed */
+	if (g_table_unitInfo[unit->o.type].movementType != MOVEMENT_WINGER) speed = Tools_AdjustToGameSpeed(speed, 1, 0xFFFF, false);
+
+	/* Add the remainder of last movement, calculate the new remainder and make steps go per 16 */
+	speed += unit->speedRemainder;
+	unit->speedRemainder = speed & 0xF;
+	speed &= 0xFFF0;
+
+	if (speed != 0) {
+		Unit_Move(unit, min(speed, Tile_GetDistance(unit->o.position, unit->currentDestination) + 16));
 	}
-
-	unit->speedRemainder = speed & 0xFF;
 }
 
 /**
  * Loop over all units, performing various of tasks.
  */
-void GameLoop_Unit()
+void GameLoop_Unit(void)
 {
 	PoolFindStruct find;
 	bool tickMovement  = false;
@@ -233,7 +239,7 @@ void GameLoop_Unit()
 
 		if (tickUnknown5) {
 			if (u->timer == 0) {
-				if ((ui->movementType == MOVEMENT_FOOT && u->speed != 0) || u->o.flags.s.isSmoking) {
+				if ((ui->movementType == MOVEMENT_FOOT && (u->speed != 0 || u->speedSub != 0)) || u->o.flags.s.isSmoking) {
 					if (u->spriteOffset >= 0) {
 						u->spriteOffset &= 0x3F;
 						u->spriteOffset++;
@@ -471,7 +477,7 @@ bool Unit_IsTypeOnMap(uint8 houseID, uint8 typeID)
 		u = g_unitFindArray[i];
 		if (houseID != HOUSE_INVALID && Unit_GetHouseID(u) != houseID) continue;
 		if (typeID != UNIT_INVALID && u->o.type != typeID) continue;
-		if (g_var_38BC == 0 && u->o.flags.s.isNotOnMap) continue;
+		if (g_validateStrictIfZero == 0 && u->o.flags.s.isNotOnMap) continue;
 
 		return true;
 	}
@@ -573,7 +579,7 @@ Team *Unit_GetTeam(Unit *u)
 /**
  * ?? Sorts unit array and count enemy/allied units.
  */
-void Unit_Sort()
+void Unit_Sort(void)
 {
 	House *h;
 	uint16 i;
@@ -851,9 +857,10 @@ bool Unit_SetPosition(Unit *u, tile32 position)
 	u->targetMove = 0;
 	u->targetAttack = 0;
 
-	if (g_map[Tile_PackTile(u->o.position)].hasExplosion) {
+	if (g_map[Tile_PackTile(u->o.position)].isUnveiled) {
+		/* A new unit being delivered fresh from the factory; force a seenByHouses
+		 *  update and add it to the statistics etc. */
 		u->o.seenByHouses &= ~(1 << u->o.houseID);
-
 		Unit_HouseUnitCount_Add(u, g_playerHouseID);
 	}
 
@@ -968,7 +975,7 @@ Unit *Unit_FindBestTargetUnit(Unit *u, uint16 mode)
  * @param target The Unit that is being targeted.
  * @return The score of the target.
  */
-uint16 Unit_Sandworm_GetTargetScore(Unit *unit, Unit *target)
+static uint16 Unit_Sandworm_GetTargetScore(Unit *unit, Unit *target)
 {
 	uint16 res;
 	uint16 distance;
@@ -985,7 +992,7 @@ uint16 Unit_Sandworm_GetTargetScore(Unit *unit, Unit *target)
 		default:                 res = 0;      break;
 	}
 
-	if (target->speed != 0 || target->fireDelay != 0) res *= 4;
+	if (target->speed != 0 || target->speedSub != 0 || target->fireDelay != 0) res *= 4;
 
 	distance = Tile_GetDistanceRoundedUp(unit->o.position, target->o.position);
 
@@ -1314,7 +1321,7 @@ bool Unit_Move(Unit *unit, uint16 distance)
 			if (u == g_unitSelected) Unit_Select(NULL);
 
 			Unit_UntargetMe(u);
-			u->o.script.returnValue = 1;
+			u->o.script.variables[1] = 1;
 			Unit_SetAction(u, ACTION_DIE);
 		} else {
 			uint16 type = Map_GetLandscapeType(packed);
@@ -1409,7 +1416,7 @@ bool Unit_Move(Unit *unit, uint16 distance)
 						}
 					} else if (ui->explosionType != 0xFFFF) {
 						if (ui->flags.impactOnSand && g_map[Tile_PackTile(unit->o.position)].index == 0 && Map_GetLandscapeType(Tile_PackTile(unit->o.position)) == LST_NORMAL_SAND) {
-							Map_MakeExplosion(8, newPosition, unit->o.hitpoints, unit->originEncoded);
+							Map_MakeExplosion(EXPLOSION_SAND_BURST, newPosition, unit->o.hitpoints, unit->originEncoded);
 						} else if (unit->o.type == UNIT_MISSILE_DEVIATOR) {
 							Map_DeviateArea(ui->explosionType, newPosition, 32);
 						} else {
@@ -1431,7 +1438,7 @@ bool Unit_Move(Unit *unit, uint16 distance)
 				}
 
 				if (unit->o.type == UNIT_SABOTEUR && (Map_GetLandscapeType(Tile_PackTile(newPosition)) == LST_WALL || (unit->targetMove != 0 && Tile_GetDistance(unit->o.position, Tools_Index_GetTile(unit->targetMove)) < 32))) {
-					Map_MakeExplosion(4, newPosition, 500, 0);
+					Map_MakeExplosion(EXPLOSION_SABOTEUR_DEATH, newPosition, 500, 0);
 
 					Unit_Free(unit);
 					return true;
@@ -1531,7 +1538,7 @@ bool Unit_Damage(Unit *unit, uint16 damage, uint16 range)
 	}
 
 	if (range != 0) {
-		Map_MakeExplosion((damage < 25) ? 0 : 1, unit->o.position, 0, 0);
+		Map_MakeExplosion((damage < 25) ? EXPLOSION_IMPACT_SMALL : EXPLOSION_IMPACT_MEDIUM, unit->o.position, 0, 0);
 	}
 
 	if (houseID != g_playerHouseID && unit->actionID == ACTION_AMBUSH && unit->o.type != UNIT_HARVESTER) {
@@ -1740,9 +1747,9 @@ Unit *Unit_CreateWrapper(uint8 houseID, UnitType typeID, uint16 destination)
 	}
 
 	if (g_table_unitInfo[typeID].movementType == MOVEMENT_WINGER) {
-		g_var_38BC++;
+		g_validateStrictIfZero++;
 		unit = Unit_Create(UNIT_INDEX_INVALID, typeID, houseID, tile, orientation);
-		g_var_38BC--;
+		g_validateStrictIfZero--;
 
 		if (unit == NULL) return NULL;
 
@@ -1755,9 +1762,9 @@ Unit *Unit_CreateWrapper(uint8 houseID, UnitType typeID, uint16 destination)
 		return unit;
 	}
 
-	g_var_38BC++;
+	g_validateStrictIfZero++;
 	carryall = Unit_Create(UNIT_INDEX_INVALID, UNIT_CARRYALL, houseID, tile, orientation);
-	g_var_38BC--;
+	g_validateStrictIfZero--;
 
 	if (carryall == NULL) {
 		if (typeID == UNIT_HARVESTER && h->harvestersIncoming == 0) h->harvestersIncoming++;
@@ -1770,9 +1777,9 @@ Unit *Unit_CreateWrapper(uint8 houseID, UnitType typeID, uint16 destination)
 
 	tile.tile = 0xFFFFFFFF;
 
-	g_var_38BC++;
+	g_validateStrictIfZero++;
 	unit = Unit_Create(UNIT_INDEX_INVALID, typeID, houseID, tile, 0);
-	g_var_38BC--;
+	g_validateStrictIfZero--;
 
 	if (unit == NULL) {
 		Unit_Remove(carryall);
@@ -1862,40 +1869,30 @@ bool Unit_IsTileOccupied(Unit *unit)
  */
 void Unit_SetSpeed(Unit *unit, uint16 speed)
 {
-	uint16 speedPerTick;
-
 	assert(unit != NULL);
-
-	speedPerTick = 0;
 
 	unit->speed          = 0;
 	unit->speedRemainder = 0;
-	unit->speedPerTick   = 0;
+	unit->speedSub       = 0;
+	unit->movingSpeed    = 0;
 
+	if (speed == 0) return;
+
+	/* The more spice there is in the harvester, the slower it will move. unit->amount is at max 100, so ~60% of its original speed. */
 	if (unit->o.type == UNIT_HARVESTER) {
 		speed = ((255 - unit->amount) * speed) / 256;
 	}
 
-	if (speed == 0 || speed >= 256) {
-		unit->movingSpeed = 0;
-		return;
-	}
-
 	unit->movingSpeed = speed & 0xFF;
-	speed = g_table_unitInfo[unit->o.type].movingSpeed * speed / 256;
-	speed = Tools_AdjustToGameSpeed(speed, 1, 255, false);
 
-	speedPerTick = speed << 4;
-	speed        = speed >> 4;
+	speed = g_table_unitInfo[unit->o.type].movingSpeedFactor * speed / 256;
 
-	if (speed != 0) {
-		speedPerTick = 255;
-	} else {
-		speed = 1;
-	}
+	/* We can only store up to 12bits (which is really fast), so max out if required */
+	if (speed >= (1 << 12)) speed = (1 << 12) - 1;
 
-	unit->speed = speed & 0xFF;
-	unit->speedPerTick = speedPerTick & 0xFF;
+	/* We move in steps of 16 */
+	unit->speedSub = speed & 0xF;
+	unit->speed    = (speed / 16) & 0xFF;
 }
 
 /**
@@ -2100,10 +2097,10 @@ Unit *Unit_CallUnitByType(UnitType type, uint8 houseID, uint16 target, bool crea
 	if (createCarryall && unit == NULL && type == UNIT_CARRYALL) {
 		tile32 position;
 
-		g_var_38BC++;
+		g_validateStrictIfZero++;
 		position.tile = 0;
 		unit = Unit_Create(UNIT_INDEX_INVALID, type, houseID, position, 96);
-		g_var_38BC--;
+		g_validateStrictIfZero--;
 
 		if (unit != NULL) unit->o.flags.s.byScenario = true;
 	}
@@ -2130,7 +2127,14 @@ void Unit_EnterStructure(Unit *unit, Structure *s)
 
 	if (unit == NULL || s == NULL) return;
 
-	if (unit == g_unitSelected) Unit_Select(NULL);
+	if (unit == g_unitSelected) {
+		/* ENHANCEMENT -- When a Unit enters a Structure, the last tile the Unit was on becomes selected rather than the entire Structure. */
+		if (g_dune2_enhanced) {
+			Map_SetSelection(Tile_PackTile(s->o.position));
+		} else {
+			Unit_Select(NULL);
+		}
+	}
 
 	ui = &g_table_unitInfo[unit->o.type];
 	si = &g_table_structureInfo[s->o.type];
@@ -2193,7 +2197,7 @@ void Unit_EnterStructure(Unit *unit, Structure *s)
 		/* ENHANCEMENT: When taking over a structure, untarget it. Else you will destroy the structure you just have taken over very easily */
 		if (g_dune2_enhanced) Structure_UntargetMe(s);
 	} else {
-		Structure_Damage(s, max(unit->o.hitpoints * 2, s->o.hitpoints / 2), 1);
+		Structure_Damage(s, min(unit->o.hitpoints * 2, s->o.hitpoints / 2), 1);
 	}
 
 	Object_Script_Variable4_Clear(&s->o);
@@ -2529,12 +2533,13 @@ void Unit_LaunchHouseMissile(uint16 packed)
 
 	Unit_CreateBullet(h->palacePosition, g_unitHouseMissile->o.type, g_unitHouseMissile->o.houseID, 0x1F4, Tools_Index_Encode(packed, IT_TILE));
 
-	if (!isAI) Sound_Output_Feedback(39);
-
 	g_houseMissileCountdown = 0;
 	g_unitHouseMissile = NULL;
 
-	if (isAI) return;
+	if (isAI) {
+		Sound_Output_Feedback(39);
+		return;
+	}
 
 	GUI_ChangeSelectionType(SELECTIONTYPE_STRUCTURE);
 }
@@ -2617,8 +2622,7 @@ void Unit_HouseUnitCount_Add(Unit *unit, uint8 houseID)
 	if (ui->movementType != MOVEMENT_WINGER) {
 		if (!House_AreAllied(houseID, Unit_GetHouseID(unit))) {
 			h->flags.isAIActive = true;
-			/* XXX -- This seems like a bug; Shouldn't it be Unit_GetHouseID(unit)? */
-			House_Get_ByIndex(unit->o.houseID)->flags.isAIActive = true;
+			House_Get_ByIndex(Unit_GetHouseID(unit))->flags.isAIActive = true;
 		}
 	}
 

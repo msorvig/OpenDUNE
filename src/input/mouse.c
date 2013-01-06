@@ -1,6 +1,4 @@
-/* $Id$ */
-
-/** @file src/mouse.c Mouse routines. */
+/** @file src/input/mouse.c Mouse routines. */
 
 #include <stdlib.h>
 #include "types.h"
@@ -56,7 +54,7 @@ uint16 g_inputFlags;
 /**
  * Initialize the mouse driver.
  */
-void Mouse_Init()
+void Mouse_Init(void)
 {
 	g_mouseX = SCREEN_WIDTH / 2;
 	g_mouseY = SCREEN_HEIGHT / 2;
@@ -78,7 +76,7 @@ void Mouse_EventHandler(uint16 mousePosX, uint16 mousePosY, bool mouseButtonLeft
 	uint8 newButtonState = (mouseButtonLeft ? 0x1 : 0x0) | (mouseButtonRight ? 0x2 : 0x0);
 
 	if (g_var_7097 == 0 && (g_mouseMode != INPUT_MOUSE_MODE_RECORD || g_fileOperation == 0)) {
-		if (g_mouseMode == INPUT_MOUSE_MODE_NORMAL && (g_inputFlags & 0x1000) == 0) {
+		if (g_mouseMode == INPUT_MOUSE_MODE_NORMAL && (g_inputFlags & INPUT_FLAG_NO_CLICK) == 0) {
 			Input_HandleInput(Mouse_CheckButtons(newButtonState));
 		}
 
@@ -136,7 +134,7 @@ uint16 Mouse_InsideRegion(int16 left, int16 top, int16 right, int16 bottom)
 	int16 mx, my;
 	uint16 inside;
 
-	while (g_mouseLock != 0) msleep(0);
+	while (g_mouseLock != 0) sleepIdle();
 	g_mouseLock++;
 
 	mx = g_mouseX;
@@ -298,7 +296,7 @@ void Mouse_HandleMovement(uint16 newButtonState, uint16 mouseX, uint16 mouseY)
 
 	g_mouseX = mouseX;
 	g_mouseY = mouseY;
-	if (g_mouseMode != INPUT_MOUSE_MODE_PLAY && g_mouseMode != INPUT_MOUSE_MODE_NORMAL && (g_inputFlags & 0x1000) == 0) {
+	if (g_mouseMode != INPUT_MOUSE_MODE_PLAY && g_mouseMode != INPUT_MOUSE_MODE_NORMAL && (g_inputFlags & INPUT_FLAG_NO_CLICK) == 0) {
 		Input_HandleInput(Mouse_CheckButtons(newButtonState));
 	}
 

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/load.c Load routines. */
 
 #include <stdio.h>
@@ -113,6 +111,7 @@ static bool Load_Main(FILE *fp)
 			case 'UNIT': if (!Unit_Load     (fp, length)) return false; break;
 			case 'BLDG': if (!Structure_Load(fp, length)) return false; break;
 			case 'TEAM': if (!Team_Load     (fp, length)) return false; break;
+			case 'ODUN': if (!UnitNew_Load  (fp, length)) return false; break;
 
 			default:
 				Error("Unknown chunk in savegame: %c%c%c%c (length: %d). Skipped.\n", header, header >> 8, header >> 16, header >> 24, length);
@@ -150,9 +149,9 @@ bool LoadFile(char *filename)
 
 	Sprites_LoadTiles();
 
-	g_var_38BC++;
+	g_validateStrictIfZero++;
 	res = Load_Main(fp);
-	g_var_38BC--;
+	g_validateStrictIfZero--;
 
 	fclose(fp);
 
@@ -173,7 +172,7 @@ bool LoadFile(char *filename)
 /**
  * In case the current house is Mercenary, another palette is loaded.
  */
-void Load_Palette_Mercenaries()
+void Load_Palette_Mercenaries(void)
 {
 	if (g_playerHouseID == HOUSE_MERCENARY) {
 		File_ReadBlockFile("IBM.PAL", g_palette1, 256 * 3);

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/house.c %House management routines. */
 
 #include <stdio.h>
@@ -48,7 +46,7 @@ static uint32 s_tickHouseStarportAvailability = 0;
 /**
  * Loop over all houses, preforming various of tasks.
  */
-void GameLoop_House()
+void GameLoop_House(void)
 {
 	PoolFindStruct find;
 	House *h = NULL;
@@ -160,9 +158,9 @@ void GameLoop_House()
 				tile32 tile;
 				tile.tile = 0xFFFFFFFF;
 
-				g_var_38BC++;
+				g_validateStrictIfZero++;
 				u = Unit_Create(UNIT_INDEX_INVALID, u->o.type, u->o.houseID, tile, 0);
-				g_var_38BC--;
+				g_validateStrictIfZero--;
 
 				if (u != NULL) {
 					g_scenario.reinforcement[i].unitID = u->o.index;
@@ -397,7 +395,7 @@ bool House_UpdateRadarState(House *h)
 
 	if (h->flags.radarActivated == activate) return false;
 
-	wsa = WSA_LoadFile("STATIC.WSA", GFX_Screen_Get_ByIndex(3), GFX_Screen_GetSize_ByIndex(3), true);
+	wsa = WSA_LoadFile("STATIC.WSA", GFX_Screen_Get_ByIndex(SCREEN_1), GFX_Screen_GetSize_ByIndex(SCREEN_1), true);
 	frameCount = WSA_GetFrameCount(wsa);
 
 	g_textDisplayNeedsUpdate = true;
@@ -413,11 +411,10 @@ bool House_UpdateRadarState(House *h)
 	frameCount = WSA_GetFrameCount(wsa);
 
 	for (frame = 0; frame < frameCount; frame++) {
-		WSA_DisplayFrame(wsa, activate ? frameCount - frame : frame, 256, 136, 0);
+		WSA_DisplayFrame(wsa, activate ? frameCount - frame : frame, 256, 136, SCREEN_0);
 		GUI_PaletteAnimate();
 
-		g_timerTimeout = 3;
-		while (g_timerTimeout != 0) sleepIdle();
+		Timer_Sleep(3);
 	}
 
 	h->flags.radarActivated = activate;
@@ -443,8 +440,8 @@ void House_UpdateCreditsStorage(uint8 houseID)
 	PoolFindStruct find;
 	uint32 creditsStorage;
 
-	uint16 loc06 = g_var_38BC;
-	g_var_38BC = 0;
+	uint16 oldValidateStrictIfZero = g_validateStrictIfZero;
+	g_validateStrictIfZero = 0;
 
 	find.houseID = houseID;
 	find.index   = 0xFFFF;
@@ -466,7 +463,7 @@ void House_UpdateCreditsStorage(uint8 houseID)
 
 	House_Get_ByIndex(houseID)->creditsStorage = creditsStorage;
 
-	g_var_38BC = loc06;
+	g_validateStrictIfZero = oldValidateStrictIfZero;
 }
 
 /**
@@ -528,7 +525,7 @@ void House_CalculatePowerAndCredit(House *h)
 	}
 
 	/* If there are no buildings left, you lose your right on 'credits without storage' */
-	if (h->index == g_playerHouseID && h->structuresBuilt == 0 && g_var_38BC == 0) {
+	if (h->index == g_playerHouseID && h->structuresBuilt == 0 && g_validateStrictIfZero == 0) {
 		g_playerCreditsNoSilo = 0;
 	}
 }

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/video/video_sdl.c SDL video driver. */
 
 #include <SDL.h>
@@ -44,11 +42,11 @@ static uint8 s_gfx_screen8[SCREEN_WIDTH * SCREEN_HEIGHT];
 static uint8 s_SDL_keymap[] = {
            0,    0,    0,    0,    0,    0,    0,    0, 0x0E, 0x0F,    0,    0,    0, 0x1C,    0,    0, /*  0x00 -  0x0F */
            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0x01,    0,    0,    0,    0, /*  0x10 -  0x1F */
-        0x39,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0x0C, 0x33,    0, /*  0x20 -  0x2F */
-        0x0B, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,    0,    0,    0,    0,    0,    0, /*  0x30 -  0x3F */
+        0x39,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0x33, 0x0C, 0x34, 0x35, /*  0x20 -  0x2F */
+        0x0B, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A,    0,    0,    0, 0x0D,    0,    0, /*  0x30 -  0x3F */
            0, 0x1E, 0x30, 0x2E, 0x20, 0x12, 0x21, 0x22, 0x23, 0x17, 0x24, 0x25, 0x26, 0x32, 0x31, 0x18, /*  0x40 -  0x4F */
-        0x19, 0x10, 0x13, 0x1F, 0x14, 0x16, 0x2F, 0x11, 0x2D, 0x15, 0x2C,    0,    0,    0,    0,    0, /*  0x50 -  0x5F */
-           0, 0x1E, 0x30, 0x2E, 0x20, 0x12, 0x21, 0x22, 0x23, 0x17, 0x24, 0x25, 0x26, 0x32, 0x31, 0x18, /*  0x60 -  0x6F */
+        0x19, 0x10, 0x13, 0x1F, 0x14, 0x16, 0x2F, 0x11, 0x2D, 0x15, 0x2C,    0, 0x2B,    0,    0,    0, /*  0x50 -  0x5F */
+        0x29, 0x1E, 0x30, 0x2E, 0x20, 0x12, 0x21, 0x22, 0x23, 0x17, 0x24, 0x25, 0x26, 0x32, 0x31, 0x18, /*  0x60 -  0x6F */
         0x19, 0x10, 0x13, 0x1F, 0x14, 0x16, 0x2F, 0x11, 0x2D, 0x15, 0x2C,    0,    0,    0,    0, 0x53, /*  0x70 -  0x7F */
            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, /*  0x80 -  0x8F */
            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, /*  0x90 -  0x9F */
@@ -60,13 +58,14 @@ static uint8 s_SDL_keymap[] = {
            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, /*  0xF0 -  0xFF */
            0, 0x4F, 0x50, 0x51, 0x4B, 0x1C, 0x4D, 0x47, 0x48, 0x49,    0,    0,    0,    0,    0,    0, /* 0x100 - 0x10F */
            0, 0x48, 0x50, 0x4D, 0x4B, 0x52, 0x47, 0x4F, 0x49, 0x51, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, /* 0x110 - 0x11F */
-        0x41, 0x42, 0x43, 0x44, 0x57, 0x58,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, /* 0x120 - 0x12F */
+        0x41, 0x42, 0x43, 0x44, 0x57, 0x58,    0,    0,    0,    0,    0,    0,    0,    0,    0, 0x36, /* 0x120 - 0x12F */
+        0x36,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0, /* 0x130 - 0x13F */
 };
 
 /**
  * Callback wrapper for mouse actions.
  */
-static void Video_Mouse_Callback()
+static void Video_Mouse_Callback(void)
 {
 	Mouse_EventHandler(s_mousePosX / SCREEN_MAGNIFICATION, s_mousePosY / SCREEN_MAGNIFICATION, s_mouseButtonLeft, s_mouseButtonRight);
 }
@@ -153,7 +152,7 @@ void Video_Mouse_SetRegion(uint16 minX, uint16 maxX, uint16 minY, uint16 maxY)
 /**
  * Initialize the video driver.
  */
-bool Video_Init()
+bool Video_Init(void)
 {
 	if (s_video_initialized) return true;
 
@@ -170,6 +169,7 @@ bool Video_Init()
 	}
 
 	SDL_ShowCursor(SDL_DISABLE);
+	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
 	s_gfx_screen = (uint8 *)s_gfx_surface->pixels;
 	memset(s_gfx_screen, 0, SCREEN_WIDTH * SCREEN_HEIGHT * SCREEN_MAGNIFICATION * SCREEN_MAGNIFICATION);
@@ -182,7 +182,7 @@ bool Video_Init()
 /**
  * Uninitialize the video driver.
  */
-void Video_Uninit()
+void Video_Uninit(void)
 {
 	s_video_initialized = false;
 	SDL_Quit();
@@ -194,9 +194,9 @@ void Video_Uninit()
  */
 #if defined(SCREEN_USE_SCALE2X)
 #	if SCREEN_MAGNIFICATION == 2
-void Video_DrawScreen()
+static void Video_DrawScreen(void)
 {
-	uint8 *data = GFX_Screen_Get_ByIndex(0);
+	uint8 *data = GFX_Screen_Get_ByIndex(SCREEN_0);
 	uint8 *gfx1 = s_gfx_screen;
 	uint8 *gfx2;
 	uint8 value;
@@ -271,9 +271,9 @@ void Video_DrawScreen()
 	gfx1 = gfx2;
 }
 #	elif SCREEN_MAGNIFICATION == 3
-void Video_DrawScreen()
+static void Video_DrawScreen(void)
 {
-	uint8 *data = GFX_Screen_Get_ByIndex(0);
+	uint8 *data = GFX_Screen_Get_ByIndex(SCREEN_0);
 	uint8 *gfx1 = s_gfx_screen;
 	uint8 *gfx2;
 	uint8 *gfx3;
@@ -390,9 +390,9 @@ void Video_DrawScreen()
 #	endif /* SCREEN_MAGNIFICATION */
 #else /* SCREEN_USE_SCALE2X */
 #	if SCREEN_MAGNIFICATION == 2
-void Video_DrawScreen()
+static void Video_DrawScreen(void)
 {
-	uint8 *data = GFX_Screen_Get_ByIndex(0);
+	uint8 *data = GFX_Screen_Get_ByIndex(SCREEN_0);
 	uint8 *gfx1 = s_gfx_screen;
 	uint8 *gfx2;
 	int x, y;
@@ -410,9 +410,9 @@ void Video_DrawScreen()
 	}
 }
 #	elif SCREEN_MAGNIFICATION == 3
-void Video_DrawScreen()
+static void Video_DrawScreen(void)
 {
-	uint8 *data = GFX_Screen_Get_ByIndex(0);
+	uint8 *data = GFX_Screen_Get_ByIndex(SCREEN_0);
 	uint8 *gfx1 = s_gfx_screen;
 	uint8 *gfx2;
 	uint8 *gfx3;
@@ -437,9 +437,9 @@ void Video_DrawScreen()
 	}
 }
 #	else /* SCREEN_MAGNIFICATION != 2 != 3 */
-void Video_DrawScreen()
+static void Video_DrawScreen(void)
 {
-	uint8 *data = GFX_Screen_Get_ByIndex(0);
+	uint8 *data = GFX_Screen_Get_ByIndex(SCREEN_0);
 	uint8 *gfx  = s_gfx_screen;
 	int x, y, i, j;
 
@@ -463,7 +463,7 @@ void Video_DrawScreen()
 /**
  * Runs every tick to handle video driver updates.
  */
-void Video_Tick()
+void Video_Tick(void)
 {
 	SDL_Event event;
 
@@ -504,7 +504,7 @@ void Video_Tick()
 			{
 				if (event.key.keysym.sym >= sizeof(s_SDL_keymap)) continue;
 				if (s_SDL_keymap[event.key.keysym.sym] == 0) {
-					Error("ERROR: unhandled key %X\n", event.key.keysym.sym);
+					Warning("Unhandled key %X\n", event.key.keysym.sym);
 					continue;
 				}
 				Video_Key_Callback(s_SDL_keymap[event.key.keysym.sym] | (keyup ? 0x80 : 0x0));
@@ -513,11 +513,11 @@ void Video_Tick()
 	}
 
 	/* Do a quick compare to see if the screen changed at all */
-	if (memcmp(GFX_Screen_Get_ByIndex(0), s_gfx_screen8, SCREEN_WIDTH * SCREEN_HEIGHT) == 0) {
+	if (memcmp(GFX_Screen_Get_ByIndex(SCREEN_0), s_gfx_screen8, SCREEN_WIDTH * SCREEN_HEIGHT) == 0) {
 		s_video_lock = false;
 		return;
 	}
-	memcpy(s_gfx_screen8, GFX_Screen_Get_ByIndex(0), SCREEN_WIDTH * SCREEN_HEIGHT);
+	memcpy(s_gfx_screen8, GFX_Screen_Get_ByIndex(SCREEN_0), SCREEN_WIDTH * SCREEN_HEIGHT);
 
 	Video_DrawScreen();
 

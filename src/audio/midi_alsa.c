@@ -1,7 +1,5 @@
-/* $Id$ */
-
-/** @file src/midi_alsa.c ALSA implementation of the MIDI. It tries to find an
- *  output port which understands MIDI. If that fails, it suggests using
+/** @file src/audio/midi_alsa.c ALSA implementation of the MIDI. It tries to
+ *  find an output port which understands MIDI. If that fails, it suggests using
  *  Timidity++ for that job. */
 
 #include <alloca.h>
@@ -16,9 +14,10 @@ static snd_midi_event_t *s_midiCoder = NULL;
 static snd_seq_port_subscribe_t *s_midiSubscription = NULL;
 static int s_midiPort = -1;
 
-static char *s_midiCaption = "OpenDUNE MIDI Port";
+static const char *s_midiCaption = "OpenDUNE MIDI Port";
 
-bool midi_init() {
+bool midi_init(void)
+{
 	snd_seq_addr_t sender, receiver;
 	snd_seq_port_info_t *pinfo;
 	snd_seq_client_info_t *cinfo;
@@ -105,7 +104,8 @@ bool midi_init() {
 	return true;
 }
 
-void midi_uninit() {
+void midi_uninit(void)
+{
 	if (s_midi == NULL) return;
 
 	snd_midi_event_free(s_midiCoder);
@@ -133,7 +133,7 @@ void midi_send(uint32 data)
 	snd_seq_drain_output(s_midi);
 }
 
-void midi_reset()
+void midi_reset(void)
 {
 	if (s_midi == NULL) return;
 

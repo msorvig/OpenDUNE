@@ -1,11 +1,10 @@
-/* $Id$ */
-
 /** @file src/gui/widget.c %Widget routines. */
 
 #include <assert.h>
 #include <stdlib.h>
 #include "types.h"
 #include "../os/math.h"
+#include "../gfx.h"
 
 #include "widget.h"
 
@@ -104,7 +103,7 @@ Widget *GUI_Widget_Get_ByIndex(Widget *w, uint16 index)
  */
 static void GUI_Widget_DrawBlocked(Widget *w, uint8 colour)
 {
-	if (g_screenActiveID == 0) {
+	if (g_screenActiveID == SCREEN_0) {
 		GUI_Mouse_Hide_InRegion(w->offsetX, w->offsetY, w->offsetX + w->width, w->offsetY + w->height);
 	}
 
@@ -112,7 +111,7 @@ static void GUI_Widget_DrawBlocked(Widget *w, uint8 colour)
 
 	GUI_DrawBlockedRectangle(w->offsetX, w->offsetY, w->width, w->height, colour);
 
-	if (g_screenActiveID == 0) {
+	if (g_screenActiveID == SCREEN_0) {
 		GUI_Mouse_Show_InRegion();
 	}
 }
@@ -199,7 +198,7 @@ void GUI_Widget_Draw(Widget *w)
 	positionBottom = positionTop + w->height - 1;
 
 	assert(drawMode < DRAW_MODE_MAX);
-	if (drawMode != DRAW_MODE_NONE && drawMode != DRAW_MODE_CUSTOM_PROC && g_screenActiveID == 0) {
+	if (drawMode != DRAW_MODE_NONE && drawMode != DRAW_MODE_CUSTOM_PROC && g_screenActiveID == SCREEN_0) {
 		GUI_Mouse_Hide_InRegion(positionLeft, positionTop, positionRight, positionBottom);
 	}
 
@@ -232,7 +231,7 @@ void GUI_Widget_Draw(Widget *w)
 		} break;
 	}
 
-	if (drawMode != DRAW_MODE_NONE && drawMode != DRAW_MODE_CUSTOM_PROC && g_screenActiveID == 0) {
+	if (drawMode != DRAW_MODE_NONE && drawMode != DRAW_MODE_CUSTOM_PROC && g_screenActiveID == SCREEN_0) {
 		GUI_Mouse_Show_InRegion();
 	}
 }
@@ -976,7 +975,7 @@ uint16 Widget_SetAndPaintCurrentWidget(uint16 index)
 /**
  * Draw the exterior of the currently selected widget.
  */
-void Widget_PaintCurrentWidget()
+void Widget_PaintCurrentWidget(void)
 {
 	GUI_DrawFilledRectangle(g_curWidgetXBase << 3, g_curWidgetYBase, ((g_curWidgetXBase + g_curWidgetWidth) << 3) - 1, g_curWidgetYBase + g_curWidgetHeight - 1, g_curWidgetFGColourNormal);
 }

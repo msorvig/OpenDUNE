@@ -1,9 +1,9 @@
-/* $Id$ */
-
 /** @file src/sprites.h Sprite definitions. */
 
 #ifndef SPRITES_H
 #define SPRITES_H
+
+#include "gfx.h"
 
 /**
  * The \c ICON.MAP contains indices only. An index can point either to another
@@ -11,12 +11,10 @@
  *  - Index 0 contain the number of icon groups (including the EOF entry).
  *  - Each index in 1 .. number_of_icongroups-1 points to the first spriteID of a icon group.
  *  - Index number_of_icongroups is 0, meaning 'the index at EOF'.
- *  .
+ *
  * Icon group at index i contains sprite indices. The first one is pointed to by
  * index i, the last one is one entry before the start of icon group i+1 (where 0
  * means EOF, as explained already).
- *
- * @note This documentation was inspired by information obtained from 'Arrakis Research Company', http://www.junkyard.dk/ .
  */
 typedef enum IconMapEntries {
 	ICM_ICONGROUP_COUNT,                 /*!< Number of icon groups. */
@@ -70,20 +68,17 @@ extern uint16 g_landscapeSpriteID;                          /*!< First landscape
 extern uint16 g_builtSlabSpriteID;                          /*!< SpriteID of the built concrete slab. */
 extern uint16 g_wallSpriteID;                               /*!< First wall spriteID. */
 
-extern void Sprites_Init();
-extern void Sprites_Uninit();
+extern void Sprites_Init(void);
+extern void Sprites_Uninit(void);
 extern uint8 Sprite_GetWidth(uint8 *sprite);
 extern uint8 Sprite_GetHeight(uint8 *sprite);
 extern uint16 Sprites_GetType(uint8 *sprite);
-extern void Sprites_LoadTiles();
-extern void Sprites_UnloadTiles();
-extern uint16 Sprites_LoadImage(const char *filename, uint16 screenID, uint8 *palette);
+extern void Sprites_LoadTiles(void);
+extern void Sprites_UnloadTiles(void);
+extern uint16 Sprites_LoadImage(const char *filename, Screen screenID, uint8 *palette);
 extern void Sprites_SetMouseSprite(uint16 x, uint16 y, uint8 *sprite);
-extern void Sprites_CPS_LoadRegionClick();
+extern void Sprites_CPS_LoadRegionClick(void);
 extern bool Sprite_IsUnveiled(uint16 spriteID);
-
-extern uint8 Orientation_Orientation256ToOrientation8(uint8 orientation);
-extern uint8 Orientation_Orientation256ToOrientation16(uint8 orientation);
 
 
 #endif /* SPRITES_H */

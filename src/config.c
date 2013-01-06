@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/config.c Configuration and options load and save routines. */
 
 #include <assert.h>
@@ -24,7 +22,7 @@ bool g_enableVoices = true;
  * @param config The address where the config will be stored.
  * @return True if loading and decoding is successful.
  */
-bool Config_Read(char *filename, DuneCfg *config)
+bool Config_Read(const char *filename, DuneCfg *config)
 {
 	char name[18]; /* "data/8.3" */
 	FILE *f;
@@ -64,7 +62,7 @@ bool Config_Read(char *filename, DuneCfg *config)
  *
  * @return True if loading is successful.
  */
-bool GameOptions_Load()
+bool GameOptions_Load(void)
 {
 	if (!File_Exists("OPTIONS.CFG")) return false;
 
@@ -76,7 +74,7 @@ bool GameOptions_Load()
 /**
  * Saves the game options.
  */
-void GameOptions_Save()
+void GameOptions_Save(void)
 {
 	uint8 index;
 

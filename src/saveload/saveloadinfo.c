@@ -1,6 +1,4 @@
-/* $Id$ */
-
-/** @file src/saveload/info.c Load/save routines for House. */
+/** @file src/saveload/info.c Load/save routines for Info. */
 
 #include <stdio.h>
 #include "types.h"

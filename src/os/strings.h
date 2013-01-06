@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/os/strings.h OS-independent inclusion of string routines. */
 
 #ifndef OS_STRINGS_H
@@ -86,6 +84,11 @@
 		#else /* __APPLE__ */
 			extern int snprintf(char * __restrict, size_t, const char * __restrict, ...) __DARWIN_LDBL_COMPAT(snprintf);
 		#endif /* __APPLE__ */
+	#endif /* __GCC__ */
+	
+	#if !defined(__MINGW32__) && defined(__GNUC__) && !defined(strdup)
+		/* strdup is not ANSI-C, but our own implemention would only be slower */
+		extern char *strdup (__const char *__s);
 	#endif /* __GCC__ */
 #endif /* _MSC_VER && !__TINYC__ */
 

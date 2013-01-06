@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/sprites.c Sprite routines. */
 
 #include <stdio.h>
@@ -46,8 +44,8 @@ uint16 g_wallSpriteID;
 void *g_mouseSprite = NULL;
 void *g_mouseSpriteBuffer = NULL;
 
-uint16 s_mouseSpriteSize = 0;
-uint16 s_mouseSpriteBufferSize = 0;
+static uint16 s_mouseSpriteSize = 0;
+static uint16 s_mouseSpriteBufferSize = 0;
 
 static bool s_iconLoaded = false;
 
@@ -80,7 +78,7 @@ static uint8 *Sprites_GetSprite(uint8 *buffer, uint16 index)
  * @param index The index of the list of sprite files to load.
  * @param sprites The array where to store CSIP for each loaded sprite.
  */
-static void Sprites_Load(char *filename)
+static void Sprites_Load(const char *filename)
 {
 	uint8 *buffer;
 	uint16 count;
@@ -230,7 +228,7 @@ static void Sprites_LoadICNFile(const char *filename)
 /**
  * Loads the sprites for tiles.
  */
-void Sprites_LoadTiles()
+void Sprites_LoadTiles(void)
 {
 	if (s_iconLoaded) return;
 
@@ -247,15 +245,13 @@ void Sprites_LoadTiles()
 	g_landscapeSpriteID = g_iconMap[g_iconMap[ICM_ICONGROUP_LANDSCAPE]];
 	g_wallSpriteID      = g_iconMap[g_iconMap[ICM_ICONGROUP_WALLS]];
 
-	Orientation_InitTable();
-
-	Script_LoadFromFile("UNIT.EMC", g_scriptUnit, g_scriptFunctionsUnit, GFX_Screen_Get_ByIndex(5));
+	Script_LoadFromFile("UNIT.EMC", g_scriptUnit, g_scriptFunctionsUnit, GFX_Screen_Get_ByIndex(SCREEN_2));
 }
 
 /**
  * Unloads the sprites for tiles.
  */
-void Sprites_UnloadTiles()
+void Sprites_UnloadTiles(void)
 {
 	s_iconLoaded = false;
 }
@@ -268,7 +264,7 @@ void Sprites_UnloadTiles()
  * @param palette Where to store the palette, if any.
  * @return The size of the loaded image.
  */
-static uint32 Sprites_LoadCPSFile(const char *filename, uint16 screenID, uint8 *palette)
+static uint32 Sprites_LoadCPSFile(const char *filename, Screen screenID, uint8 *palette)
 {
 	uint8 index;
 	uint16 size;
@@ -317,7 +313,7 @@ static uint32 Sprites_LoadCPSFile(const char *filename, uint16 screenID, uint8 *
  * @param palette Where to store the palette, if any.
  * @return The size of the loaded image.
  */
-uint16 Sprites_LoadImage(const char *filename, uint16 screenID, uint8 *palette)
+uint16 Sprites_LoadImage(const char *filename, Screen screenID, uint8 *palette)
 {
 	uint8 index;
 	uint32 header;
@@ -337,7 +333,7 @@ void Sprites_SetMouseSprite(uint16 hotSpotX, uint16 hotSpotY, uint8 *sprite)
 
 	if (sprite == NULL || g_var_7097 != 0) return;
 
-	while (g_mouseLock != 0) msleep(0);
+	while (g_mouseLock != 0) sleepIdle();
 
 	g_mouseLock++;
 
@@ -401,7 +397,7 @@ void Sprites_SetMouseSprite(uint16 hotSpotX, uint16 hotSpotY, uint8 *sprite)
 	g_mouseLock--;
 }
 
-static void InitRegions()
+static void InitRegions(void)
 {
 	uint16 *regions = g_regions;
 	uint16 i;
@@ -414,16 +410,16 @@ static void InitRegions()
 	for (i = 0; i < regions[0]; i++) regions[i + 1] = 0xFFFF;
 }
 
-void Sprites_CPS_LoadRegionClick()
+void Sprites_CPS_LoadRegionClick(void)
 {
 	uint8 *buf;
 	uint8 i;
 	char filename[16];
 
-	buf = GFX_Screen_Get_ByIndex(5);
+	buf = GFX_Screen_Get_ByIndex(SCREEN_2);
 
 	g_fileRgnclkCPS = buf;
-	Sprites_LoadCPSFile("RGNCLK.CPS", 5, NULL);
+	Sprites_LoadCPSFile("RGNCLK.CPS", SCREEN_2, NULL);
 	for (i = 0; i < 120; i++) memcpy(buf + (i * 304), buf + 7688 + (i * 320), 304);
 	buf += 120 * 304;
 
@@ -449,7 +445,7 @@ bool Sprite_IsUnveiled(uint16 spriteID)
 	return false;
 }
 
-void Sprites_Init()
+void Sprites_Init(void)
 {
 	g_spriteBuffer = calloc(1, 20000);
 	Sprites_Load("MOUSE.SHP");                       /*   0 -   6 */
@@ -481,7 +477,7 @@ void Sprites_Init()
 	Sprites_Load("CREDIT11.SHP");                    /* 524 */
 }
 
-void Sprites_Uninit()
+void Sprites_Uninit(void)
 {
 	uint16 i;
 

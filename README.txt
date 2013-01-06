@@ -38,9 +38,9 @@ Currently we official support the following platforms:
 Requirements
 ------------
 OpenDUNE doesn't require any library to run on Windows. For Mac OS X we make
- so called static-compiled binaries, which means all libraries it depends on
- (mostly LibSDL) are already included in the library, and requires no action
- on your part.
+ so-called static-compiled binaries, which means all libraries it depends on
+ (mostly LibSDL) are already included in the binary, and no action is
+ required on your part
 For Linux, you need to install LibSDL yourself. It is available in every
  package manager, and the chances are high it is already installed on your
  system.
@@ -85,6 +85,7 @@ Thanks To (in alphabetical order):
   Szabolcs Nagy (nsz)                  - ANSI C Guru
   Ingo von Borstel (planetmaker)       - For his many bug-reports
   tneo                                 - For his many bug-reports
+  David Wang (wangds)                  - For his many patches and bug-reports
 
   Bug Reporters                        - Thank you all for all bug reports
   Westwood                             - For an amazing game

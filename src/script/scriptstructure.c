@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/script/structure.c %Structure script routines. */
 
 #include <stdio.h>
@@ -9,6 +7,7 @@
 
 #include "../audio/sound.h"
 #include "../config.h"
+#include "../explosion.h"
 #include "../gui/gui.h"
 #include "../house.h"
 #include "../map.h"
@@ -88,17 +87,9 @@ uint16 Script_Structure_SetState(ScriptEngine *script)
  */
 uint16 Script_Structure_RemoveFogAroundTile(ScriptEngine *script)
 {
-	const StructureInfo *si;
-	Structure *s;
-
 	VARIABLE_NOT_USED(script);
 
-	s = g_scriptCurrentStructure;
-	if (s->o.houseID != g_playerHouseID) return 0;
-
-	si = &g_table_structureInfo[s->o.type];
-
-	Tile_RemoveFogInRadius(s->o.position, si->o.fogUncoverRadius);
+	Structure_RemoveFog(g_scriptCurrentStructure);
 
 	return 0;
 }
@@ -285,7 +276,7 @@ uint16 Script_Structure_Unknown0C5A(ScriptEngine *script)
 	Unit_SetOrientation(u, Tile_GetDirection(s->o.position, u->o.position) & 0xE0, true, 0);
 	Unit_SetOrientation(u, u->orientation[0].current, true, 1);
 
-	if (u->o.houseID == g_playerHouseID) {
+	if (u->o.houseID == g_playerHouseID && u->o.type == UNIT_HARVESTER) {
 		GUI_DisplayHint(STR_SEARCH_FOR_SPICE_FIELDS_TO_HARVEST, 0x6A);
 	}
 
@@ -521,11 +512,11 @@ uint16 Script_Structure_Fire(ScriptEngine *script)
 	if (s->o.type == STRUCTURE_ROCKET_TURRET && Tile_GetDistance(Tools_Index_GetTile(target), s->o.position) >= 0x300) {
 		type      = UNIT_MISSILE_TURRET;
 		damage    = 30;
-		fireDelay = Tools_AdjustToGameSpeed(g_table_unitInfo[UNIT_LAUNCHER].fireDelay, 1, 255, true);
+		fireDelay = Tools_AdjustToGameSpeed(g_table_unitInfo[UNIT_LAUNCHER].fireDelay, 1, 0xFFFF, true);
 	} else {
 		type      = UNIT_BULLET;
 		damage    = 20;
-		fireDelay = Tools_AdjustToGameSpeed(g_table_unitInfo[UNIT_TANK].fireDelay, 1, 255, true);
+		fireDelay = Tools_AdjustToGameSpeed(g_table_unitInfo[UNIT_TANK].fireDelay, 1, 0xFFFF, true);
 	}
 
 	position.tile = s->o.position.tile;
@@ -566,7 +557,7 @@ uint16 Script_Structure_Explode(ScriptEngine *script)
 
 		tile = Tile_UnpackTile(position + g_table_structure_layoutTiles[layout][i]);
 
-		Map_MakeExplosion(14, tile, 0, 0);
+		Map_MakeExplosion(EXPLOSION_STRUCTURE, tile, 0, 0);
 	}
 
 	return 0;

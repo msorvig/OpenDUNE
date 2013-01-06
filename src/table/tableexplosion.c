@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/table/explosion.c Explosion file table. */
 
 #include "types.h"
@@ -138,7 +136,7 @@ static const ExplosionCommandStruct s_explosion09[] = {
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
 	{ EXPLOSION_SET_SPRITE        ,  203 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
-	{ EXPLOSION_SET_ROW           , 4016 },
+	{ EXPLOSION_MOVE_Y_POSITION   ,  -80 },
 	{ EXPLOSION_SET_SPRITE        ,  168 },
 	{ EXPLOSION_SET_TIMEOUT       ,   15 },
 	{ EXPLOSION_SET_SPRITE        ,  169 },
@@ -236,7 +234,7 @@ static const ExplosionCommandStruct s_explosion14[] = {
 	{ EXPLOSION_SET_TIMEOUT       ,    7 },
 	{ EXPLOSION_SET_SPRITE        ,  189 },
 	{ EXPLOSION_BLOOM_EXPLOSION   ,    0 },
-	{ EXPLOSION_NOOP              ,    0 },
+	{ EXPLOSION_SCREEN_SHAKE      ,    0 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
 	{ EXPLOSION_SET_SPRITE        ,  190 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
@@ -250,7 +248,7 @@ static const ExplosionCommandStruct s_explosion14[] = {
 static const ExplosionCommandStruct s_explosion15[] = {
 	{ EXPLOSION_SET_SPRITE        ,  183 },
 	{ EXPLOSION_PLAY_VOICE        ,   49 },
-	{ EXPLOSION_SET_ROW           , 4016 },
+	{ EXPLOSION_MOVE_Y_POSITION   ,  -80 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
 	{ EXPLOSION_SET_SPRITE        ,  184 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
@@ -342,18 +340,18 @@ static const ExplosionCommandStruct s_explosion18[] = {
 static const ExplosionCommandStruct s_explosion19[] = {
 	{ EXPLOSION_SET_SPRITE        ,  156 },
 	{ EXPLOSION_PLAY_VOICE        ,   40 },
-	{ EXPLOSION_NOOP              ,    0 },
+	{ EXPLOSION_SCREEN_SHAKE      ,    0 },
 	{ EXPLOSION_SET_TIMEOUT       ,    7 },
-	{ EXPLOSION_NOOP              ,    0 },
+	{ EXPLOSION_SCREEN_SHAKE      ,    0 },
 	{ EXPLOSION_SET_SPRITE        ,  157 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
-	{ EXPLOSION_NOOP              ,    0 },
+	{ EXPLOSION_SCREEN_SHAKE      ,    0 },
 	{ EXPLOSION_SET_SPRITE        ,  158 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
-	{ EXPLOSION_NOOP              ,    0 },
+	{ EXPLOSION_SCREEN_SHAKE      ,    0 },
 	{ EXPLOSION_SET_SPRITE        ,  157 },
 	{ EXPLOSION_SET_TIMEOUT       ,    3 },
-	{ EXPLOSION_NOOP              ,    0 },
+	{ EXPLOSION_SCREEN_SHAKE      ,    0 },
 	{ EXPLOSION_TILE_DAMAGE       ,    0 },
 	{ EXPLOSION_STOP              ,    0 }
 };

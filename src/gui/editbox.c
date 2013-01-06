@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/gui/editbox.c Editbox routines. */
 
 #include <stdio.h>
@@ -51,9 +49,9 @@ static void GUI_EditBox_BlinkCursor(uint16 positionX, bool resetBlink)
  * @param unknown4 Unknown.
  * @return Unknown.
  */
-uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uint16 (*tickProc)(), uint16 unknown4)
+uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uint16 (*tickProc)(void), uint16 unknown4)
 {
-	uint16 oldScreenID;
+	Screen oldScreenID;
 	uint16 oldValue_07AE_0000;
 	uint16 positionX;
 	uint16 maxWidth;
@@ -64,10 +62,10 @@ uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uin
 
 	/* Initialize */
 	{
-		Input_Flags_SetBits(INPUT_FLAG_UNKNOWN_0002);
+		Input_Flags_SetBits(INPUT_FLAG_NO_TRANSLATE);
 		Input_Flags_ClearBits(INPUT_FLAG_UNKNOWN_2000);
 
-		oldScreenID = GFX_Screen_SetActive(0);
+		oldScreenID = GFX_Screen_SetActive(SCREEN_0);
 
 		oldValue_07AE_0000 = Widget_SetCurrentWidget(unknown1);
 
@@ -104,7 +102,7 @@ uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uin
 
 	GUI_Mouse_Show_Safe();
 
-	while (true) {
+	for (;; sleepIdle()) {
 		uint16 keyWidth;
 		uint16 key;
 
@@ -117,10 +115,8 @@ uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uin
 
 		GUI_EditBox_BlinkCursor(positionX + textWidth, false);
 
-		if (key == 0x0) {
-			sleepIdle();
-			continue;
-		}
+		if (key == 0x0) continue;
+
 		if ((key & 0x8000) != 0) {
 			returnValue = key;
 			break;
@@ -137,10 +133,7 @@ uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uin
 
 		/* Handle backspace */
 		if (key == 0x0F) {
-			if (textLength == 0) {
-				sleepIdle();
-				continue;
-			}
+			if (textLength == 0) continue;
 
 			GUI_EditBox_BlinkCursor(positionX + textWidth, true);
 
@@ -149,24 +142,17 @@ uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uin
 			*(--t) = '\0';
 
 			GUI_EditBox_BlinkCursor(positionX + textWidth, false);
-			sleepIdle();
 			continue;
 		}
 
 		key = Input_Keyboard_HandleKeys(key) & 0xFF;
 
 		/* Names can't start with a space, and should be alpha-numeric */
-		if ((key == 0x20 && textLength == 0) || key < 0x20 || key > 0x7E) {
-			sleepIdle();
-			continue;
-		}
+		if ((key == 0x20 && textLength == 0) || key < 0x20 || key > 0x7E) continue;
 
 		keyWidth = Font_GetCharWidth(key & 0xFF);
 
-		if (textWidth + keyWidth >= maxWidth || textLength >= maxLength) {
-			sleepIdle();
-			continue;
-		}
+		if (textWidth + keyWidth >= maxWidth || textLength >= maxLength) continue;
 
 		/* Add char to the text */
 		*t = key & 0xFF;
@@ -185,13 +171,11 @@ uint16 GUI_EditBox(char *text, uint16 maxLength, uint16 unknown1, Widget *w, uin
 		textWidth += keyWidth;
 
 		GUI_EditBox_BlinkCursor(positionX + textWidth, false);
-
-		sleepIdle();
 	}
 
 	/* Deinitialize */
 	{
-		Input_Flags_ClearBits(INPUT_FLAG_UNKNOWN_0002);
+		Input_Flags_ClearBits(INPUT_FLAG_NO_TRANSLATE);
 		Input_Flags_SetBits(INPUT_FLAG_UNKNOWN_2000);
 
 		Widget_SetCurrentWidget(oldValue_07AE_0000);

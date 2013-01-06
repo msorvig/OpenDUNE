@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/map.c Map routines. */
 
 #include <assert.h>
@@ -115,7 +113,7 @@ void Map_SetSelection(uint16 packed)
 			const StructureInfo *si;
 
 			si = &g_table_structureInfo[s->o.type];
-			if (s->o.houseID == g_playerHouseID || g_selectionType != SELECTIONTYPE_MENTAT) {
+			if (s->o.houseID == g_playerHouseID && g_selectionType != SELECTIONTYPE_MENTAT) {
 				GUI_DisplayHint(si->o.hintStringID, si->o.spriteID);
 			}
 
@@ -253,12 +251,12 @@ void Map_UpdateMinimapPosition(uint16 packed, bool forceUpdate)
 	static uint16 minimapPreviousPosition = 0;
 
 	bool cleared;
-	uint16 oldScreenID;
+	Screen oldScreenID;
 
 	if (packed != 0xFFFF && packed == minimapPreviousPosition && !forceUpdate) return;
 	if (g_selectionType == SELECTIONTYPE_MENTAT) return;
 
-	oldScreenID = GFX_Screen_SetActive(2);
+	oldScreenID = GFX_Screen_SetActive(SCREEN_1);
 
 	cleared = false;
 
@@ -301,9 +299,9 @@ void Map_UpdateMinimapPosition(uint16 packed, bool forceUpdate)
 		}
 	}
 
-	if (cleared && oldScreenID == 0) {
+	if (cleared && oldScreenID == SCREEN_0) {
 		GUI_Mouse_Hide_Safe();
-		GUI_Screen_Copy(32, 136, 32, 136, 8, 64, 2, 0);
+		GUI_Screen_Copy(32, 136, 32, 136, 8, 64, SCREEN_1, SCREEN_0);
 		GUI_Mouse_Show_Safe();
 	}
 
@@ -463,7 +461,7 @@ static bool Map_UpdateWall(uint16 packed)
  */
 void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 unitOriginEncoded)
 {
-	uint16 reactionDistance = (type == 11) ? 32 : 16;
+	uint16 reactionDistance = (type == EXPLOSION_DEATH_HAND) ? 32 : 16;
 	uint16 positionPacked = Tile_PackTile(position);
 
 	if (!s_debugNoExplosionDamage && hitpoints != 0) {
@@ -488,7 +486,7 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 			distance = Tile_GetDistance(position, u->o.position) >> 4;
 			if (distance >= reactionDistance) continue;
 
-			if (!(u->o.type == UNIT_SANDWORM && type == 13) && u->o.type != UNIT_FRIGATE) {
+			if (!(u->o.type == UNIT_SANDWORM && type == EXPLOSION_SANDWORM_SWALLOW) && u->o.type != UNIT_FRIGATE) {
 				Unit_Damage(u, hitpoints >> (distance >> 2), 0);
 			}
 
@@ -514,7 +512,7 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 				if (target == NULL) continue;
 
 				targetInfo = &g_table_unitInfo[target->o.type];
-				if (targetInfo->bulletType == 0xFFFF) t->target = unitOriginEncoded;
+				if (targetInfo->bulletType == UNIT_INVALID) t->target = unitOriginEncoded;
 				continue;
 			}
 
@@ -528,7 +526,7 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 				}
 			}
 
-			if (ui->bulletType == 0xFFFF) continue;
+			if (ui->bulletType == UNIT_INVALID) continue;
 
 			if (u->actionID == ACTION_GUARD && u->o.flags.s.byScenario) {
 				Unit_SetAction(u, ACTION_HUNT);
@@ -550,11 +548,11 @@ void Map_MakeExplosion(uint16 type, tile32 position, uint16 hitpoints, uint16 un
 		Structure *s = Structure_Get_ByPackedTile(positionPacked);
 
 		if (s != NULL) {
-			if (type == 2) {
+			if (type == EXPLOSION_IMPACT_LARGE) {
 				const StructureInfo *si = &g_table_structureInfo[s->o.type];
 
 				if (si->o.hitpoints / 2 > s->o.hitpoints) {
-					type = 15;
+					type = EXPLOSION_SMOKE_PLUME;
 				}
 			}
 
@@ -735,10 +733,10 @@ void Map_DeviateArea(uint16 type, tile32 position, uint16 radius)
  */
 void Map_Bloom_ExplodeSpice(uint16 packed, uint8 houseID)
 {
-	if (g_var_38BC == 0) {
+	if (g_validateStrictIfZero == 0) {
 		Unit_Remove(Unit_Get_ByPackedTile(packed));
 		g_map[packed].groundSpriteID = g_mapSpriteID[packed] & 0x1FF;
-		Map_MakeExplosion(19, Tile_UnpackTile(packed), 0, 0);
+		Map_MakeExplosion(EXPLOSION_SPICE_BLOOM_TREMOR, Tile_UnpackTile(packed), 0, 0);
 	}
 
 	if (houseID == g_playerHouseID) Sound_Output_Feedback(36);
@@ -1380,7 +1378,7 @@ static void Map_UnveilTile_Neighbour(uint16 packed)
 	if (t->isUnveiled) {
 		int i;
 
-		if (g_var_38BC == 0 && Sprite_IsUnveiled(t->overlaySpriteID)) return;
+		if (g_validateStrictIfZero == 0 && Sprite_IsUnveiled(t->overlaySpriteID)) return;
 
 		spriteID = 0;
 
@@ -1439,7 +1437,7 @@ bool Map_UnveilTile(uint16 packed, uint8 houseID)
 	s = Structure_Get_ByPackedTile(packed);
 	if (s != NULL) {
 		s->o.seenByHouses |= 1 << houseID;
-		if (s->o.houseID == HOUSE_ATREIDES) s->o.seenByHouses |= 1 << HOUSE_FREMEN;
+		if (houseID == HOUSE_ATREIDES) s->o.seenByHouses |= 1 << HOUSE_FREMEN;
 	}
 
 	Map_UnveilTile_Neighbour(packed);

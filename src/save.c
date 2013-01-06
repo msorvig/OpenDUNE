@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/save.c Save routines. */
 
 #include <stdio.h>
@@ -31,7 +29,7 @@
  * @param saveProc The proc to call to generate the content of the chunk.
  * @return True if and only if all bytes were written successful.
  */
-static bool Save_Chunk(FILE *fp, char *header, bool (*saveProc)(FILE *fp))
+static bool Save_Chunk(FILE *fp, const char *header, bool (*saveProc)(FILE *fp))
 {
 	uint32 position;
 	uint32 length;
@@ -104,6 +102,7 @@ static bool Save_Main(FILE *fp, char *description)
 	if (!Save_Chunk(fp, "BLDG", &Structure_Save)) return false;
 	if (!Save_Chunk(fp, "MAP ", &Map_Save)) return false;
 	if (!Save_Chunk(fp, "TEAM", &Team_Save)) return false;
+	if (!Save_Chunk(fp, "ODUN", &UnitNew_Save)) return false;
 
 	/* Write the total length of all data in the FORM chunk */
 	length = ftell(fp) - 8;
@@ -177,9 +176,9 @@ bool SaveFile(char *filename, char *description)
 		return false;
 	}
 
-	g_var_38BC++;
+	g_validateStrictIfZero++;
 	res = Save_Main(fp, description);
-	g_var_38BC--;
+	g_validateStrictIfZero--;
 
 	fclose(fp);
 

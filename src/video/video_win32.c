@@ -1,8 +1,7 @@
-/* $Id$ */
-
 /** @file src/video/video_win32.c WIN32 video driver. */
 
 #include <stdio.h>
+#define _WIN32_WINNT 0x0500
 #include <windows.h>
 #include <commctrl.h>
 #include <malloc.h>
@@ -20,7 +19,7 @@
 /** The the magnification of the screen. 2 means 640x400, 3 means 960x600, etc. */
 #define SCREEN_MAGNIFICATION 2
 
-static char *s_className = "OpenDUNE";
+static const char *s_className = "OpenDUNE";
 static bool s_init = false;
 static bool s_lock = false;
 static HWND s_hwnd = NULL;
@@ -59,7 +58,8 @@ static VkMapping s_keyMap[] = {
 	M('8',           0x0009),
 	M('9',           0x000A),
 	M('0',           0x000B),
-	M(VK_OEM_4,      0x000C),
+	M(VK_OEM_MINUS,  0x000C),
+	M(VK_OEM_PLUS,   0x000D),
 	M(VK_BACK,       0x000E),
 	M(VK_TAB,        0x000F),
 	M('A',           0x001E),
@@ -89,7 +89,12 @@ static VkMapping s_keyMap[] = {
 	M('Y',           0x0015),
 	M('Z',           0x002C),
 	M(VK_RETURN,     0x001C),
-	M(0xBE,          0x0033),
+	M(VK_OEM_3,      0x0029),
+	M(VK_OEM_5,      0x002B),
+	M(VK_OEM_COMMA,  0x0033),
+	M(VK_OEM_PERIOD, 0x0034),
+	M(VK_OEM_2,      0x0035),
+	M(VK_SHIFT,      0x0036),
 	M(VK_SPACE,      0x0039),
 	M(VK_F1,         0x003B),
 	M(VK_F2,         0x003C),
@@ -138,7 +143,7 @@ static uint16 MapKey(WPARAM vk)
 /**
  * Callback wrapper for mouse actions.
  */
-static void Video_Mouse_Callback()
+static void Video_Mouse_Callback(void)
 {
 	Mouse_EventHandler(s_mousePosX / SCREEN_MAGNIFICATION, s_mousePosY / SCREEN_MAGNIFICATION, s_mouseButtonLeft, s_mouseButtonRight);
 }
@@ -253,7 +258,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 			scan = MapKey(wParam);
 
 			if (scan == 0) {
-				Error("ERROR: unhandled key %X\n", wParam);
+				Warning("Unhandled key %X\n", wParam);
 				return 0;
 			}
 			if ((scan >> 8) != 0) Input_EventHandler(scan >> 8);
@@ -267,7 +272,7 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-bool Video_Init()
+bool Video_Init(void)
 {
 	WNDCLASS wc;
 	HINSTANCE hInstance;
@@ -314,7 +319,7 @@ bool Video_Init()
 	return true;
 }
 
-void Video_Uninit()
+void Video_Uninit(void)
 {
 	if (!s_init) return;
 
@@ -324,7 +329,7 @@ void Video_Uninit()
 	s_init = false;
 }
 
-void Video_Tick()
+void Video_Tick(void)
 {
 	MSG msg;
 
@@ -362,12 +367,12 @@ void Video_Tick()
 	}
 
 	/* Do a quick compare to see if the screen changed at all */
-	if (memcmp(GFX_Screen_Get_ByIndex(0), s_screen, SCREEN_WIDTH * SCREEN_HEIGHT) == 0) {
+	if (memcmp(GFX_Screen_Get_ByIndex(SCREEN_0), s_screen, SCREEN_WIDTH * SCREEN_HEIGHT) == 0) {
 		s_lock = false;
 		return;
 	}
 
-	memcpy(s_screen, GFX_Screen_Get_ByIndex(0), SCREEN_WIDTH * SCREEN_HEIGHT);
+	memcpy(s_screen, GFX_Screen_Get_ByIndex(SCREEN_0), SCREEN_WIDTH * SCREEN_HEIGHT);
 
 	InvalidateRect(s_hwnd, NULL, TRUE);
 	s_lock = false;

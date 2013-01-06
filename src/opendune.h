@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/opendune.h Gameloop and other main definitions. */
 
 #ifndef OPENDUNE_H
@@ -31,7 +29,7 @@ typedef struct XYPosition {
 	uint16 y; /*!< Y coordinate. */
 } XYPosition;
 
-extern char *window_caption;
+extern const char *window_caption;
 extern bool g_dune2_enhanced;
 
 extern uint32 g_hintsShown1;
@@ -45,22 +43,22 @@ extern bool   g_debugGame;
 extern bool   g_debugScenario;
 extern bool   g_debugSkipDialogs;
 
-extern uint16 g_var_38BC;
-extern bool g_var_38F8;
+extern uint16 g_validateStrictIfZero;
+extern bool g_running;
 extern uint16 g_selectionType;
 extern uint16 g_selectionTypeNew;
 extern bool g_viewport_forceRedraw;
-extern bool g_var_3A14;
+extern bool g_viewport_fadein;
 
 extern int16 g_musicInBattle;
 
 extern void *g_readBuffer;
 extern uint32 g_readBufferSize;
 
-extern void Main();
-extern void Game_Prepare();
-extern void Game_Init();
+extern void Main(void);
+extern void Game_Prepare(void);
+extern void Game_Init(void);
 extern void Game_LoadScenario(uint8 houseID, uint16 scenarioID);
-extern void PrepareEnd();
+extern void PrepareEnd(void);
 
 #endif /* OPENDUNE_H */

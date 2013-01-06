@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/house.h %House management definitions. */
 
 #ifndef HOUSE_H
@@ -19,6 +17,18 @@ typedef enum HouseType {
 	HOUSE_MAX       = 6,
 	HOUSE_INVALID   = 0xFF
 } HouseType;
+
+/**
+ * Flags used to indicate houses in a bitmask.
+ */
+typedef enum HouseFlag {
+	FLAG_HOUSE_HARKONNEN    = 1 << HOUSE_HARKONNEN, /* 0x01 */
+	FLAG_HOUSE_ATREIDES     = 1 << HOUSE_ATREIDES,  /* 0x02 */
+	FLAG_HOUSE_ORDOS        = 1 << HOUSE_ORDOS,     /* 0x04 */
+	FLAG_HOUSE_FREMEN       = 1 << HOUSE_FREMEN,    /* 0x08 */
+	FLAG_HOUSE_SARDAUKAR    = 1 << HOUSE_SARDAUKAR, /* 0x10 */
+	FLAG_HOUSE_MERCENARY    = 1 << HOUSE_MERCENARY  /* 0x20 */
+} HouseFlag;
 
 /**
  * Types of special %House Weapons available in the game.
@@ -145,7 +155,7 @@ extern uint16 g_playerCreditsNoSilo;
 extern uint16 g_playerCredits;
 extern uint32 g_tickHousePowerMaintenance;
 
-extern void GameLoop_House();
+extern void GameLoop_House(void);
 extern uint8 House_StringToType(const char *name);
 extern void House_EnsureHarvesterAvailable(uint8 houseID);
 extern bool House_AreAllied(uint8 houseID1, uint8 houseID2);

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/tile.c %Tile routines. */
 
 #include <stdio.h>
@@ -15,25 +13,6 @@
 #include "tools.h"
 
 
-uint8 s_orientationTable[256];
-
-
-/**
- * Initialize the orientation table.
- */
-void Orientation_InitTable()
-{
-	uint8 *block = s_orientationTable;
-	int16 i;
-
-	for (i = 0; i < 256; i++) {
-		uint8 low  = ((i + 16) / 32) & 0x7;
-		uint8 hi   = ((i + 8)  / 16) & 0xF;
-
-		*block++ = (hi << 4) | low;
-	}
-}
-
 /**
  * Check whether a tile is valid.
  *
@@ -46,15 +25,21 @@ bool Tile_IsValid(tile32 tile)
 }
 
 /**
- * Return the X- and Y- position/offset of a tile, in some weird order.
+ * Make a tile32 from an X- and Y-position.
  *
- * @param tile The tile32 to get the X- and Y-position/offset from.
- * @return The X-position, X-offset, Y-position, and Y-offset of a tile, in
- *  that order, 8bits per item.
+ * @param x The X-position.
+ * @param y The Y-position.
+ * @return A tile32 at the top-left corner of the X- and Y-position.
  */
-uint32 Tile_GetSpecialXY(tile32 tile)
+tile32 Tile_MakeXY(uint16 x, uint16 y)
 {
-	return (tile.d.px + (tile.d.ox << 8)) + ((tile.d.py + (tile.d.oy << 8)) << 16);
+	tile32 tile;
+
+	tile.tile = 0;
+	tile.d.px = x;
+	tile.d.py = y;
+
+	return tile;
 }
 
 /**
@@ -280,7 +265,7 @@ void Tile_RemoveFogInRadius(tile32 tile, uint16 radius)
 
 	x = Tile_GetPackedX(packed);
 	y = Tile_GetPackedY(packed);
-	tile.tile = Tile_GetSpecialXY(tile);
+	tile = Tile_MakeXY(x, y);
 
 	for (i = -radius; i <= radius; i++) {
 		for (j = -radius; j <= radius; j++) {
@@ -290,8 +275,7 @@ void Tile_RemoveFogInRadius(tile32 tile, uint16 radius)
 			if ((y + j) < 0 || (y + j) >= 64) continue;
 
 			packed = Tile_PackXY(x + i, y + j);
-
-			t.tile = Tile_GetSpecialXY(Tile_UnpackTile(packed));
+			t = Tile_MakeXY(x + i, y + j);
 
 			if (Tile_GetDistanceRoundedUp(tile, t) > radius) continue;
 
@@ -578,7 +562,7 @@ tile32 Tile_MoveByOrientation(tile32 position, uint8 orientation)
  */
 uint8 Orientation_Orientation256ToOrientation8(uint8 orientation)
 {
-	return s_orientationTable[orientation] & 0x7;
+	return ((orientation + 16) / 32) & 0x7;
 }
 
 /**
@@ -588,5 +572,5 @@ uint8 Orientation_Orientation256ToOrientation8(uint8 orientation)
  */
 uint8 Orientation_Orientation256ToOrientation16(uint8 orientation)
 {
-	return s_orientationTable[orientation] >> 4;
+	return ((orientation + 8) / 16) & 0xF;
 }

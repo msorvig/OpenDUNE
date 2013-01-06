@@ -24,8 +24,8 @@ Structure
 - Repair cost calculation is unfair. Dune2 uses a 256 float-resolution,
     meaning that you get rounding errors very fast. In result, Palace costs
     nothing to repair, and a windtrap costs 2 credits instead of 3 credits per
-    repair tick. In detail: (2 * 256 / hitpoints) * credits / 256. The first
-    part causes rounding errors.
+    repair tick. In detail: ((2 * 256 / hitpoints) * credits + 128) / 256. The
+    first part causes rounding errors.
 - If one structure gives a script error, all structures after it in the linked
     list are not handled. This doesn't really seem correct.
 - In Script function which finds the closest unit to target, it doesn't pick
@@ -43,6 +43,10 @@ Structure
 - A structure in production also counts towards your storable spice,
     producing power, and/or requiring power. It does not check if the structure
     is in fact placed on the map.
+- If a structure gets damaged during upgrading, pressing the "Upgrading" button
+    silently starts the repair of the structure, and doesn't cancel upgrading.
+- Fog is removed around the top left corner instead of the center of a
+    structure.
 
 
 Unit
@@ -51,6 +55,8 @@ Unit
     wobbling, even if it enters a tile where it shouldn't wobble.
 - The warning of an enemy approach tends to be wrong. This due to a math
     failure in the code.
+- When a Unit enters a Structure, the last tile the Unit was on becomes
+    selected rather than the entire Structure.
 
 
 Scenario
@@ -88,6 +94,8 @@ General
     for such short time, you never really see it.
 - When loading a game, the fadein is barely visible because it is against the
     screen how it will turn out, minus the selection of an active building.
+- After visiting Mentat (the help) window, auto-repeat of keys gets disabled.
+- Dune2 depends on slow CPUs to limit the rate mouse clicks are handled.
 
 
 Map

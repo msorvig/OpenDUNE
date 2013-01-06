@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/pool/unit.c %Unit pool routines. */
 
 #include <assert.h>
@@ -49,7 +47,7 @@ Unit *Unit_Find(PoolFindStruct *find)
 		Unit *u = g_unitFindArray[find->index];
 		if (u == NULL) continue;
 
-		if (u->o.flags.s.isNotOnMap && g_var_38BC == 0) continue;
+		if (u->o.flags.s.isNotOnMap && g_validateStrictIfZero == 0) continue;
 		if (find->houseID != HOUSE_INVALID       && find->houseID != Unit_GetHouseID(u)) continue;
 		if (find->type    != UNIT_INDEX_INVALID  && find->type    != u->o.type)  continue;
 
@@ -62,7 +60,7 @@ Unit *Unit_Find(PoolFindStruct *find)
 /**
  * Initialize the Unit array.
  */
-void Unit_Init()
+void Unit_Init(void)
 {
 	memset(g_unitArray, 0, sizeof(g_unitArray));
 	memset(g_unitFindArray, 0, sizeof(g_unitFindArray));
@@ -73,7 +71,7 @@ void Unit_Init()
  * Recount all Units, ignoring the cache array. Also set the unitCount
  *  of all houses to zero.
  */
-void Unit_Recount()
+void Unit_Recount(void)
 {
 	uint16 index;
 	PoolFindStruct find = { -1, -1, -1 };
@@ -115,7 +113,7 @@ Unit *Unit_Allocate(uint16 index, uint8 type, uint8 houseID)
 	h = House_Get_ByIndex(houseID);
 	if (h->unitCount >= h->unitCountMax) {
 		if (g_table_unitInfo[type].movementType != MOVEMENT_WINGER && g_table_unitInfo[type].movementType != MOVEMENT_SLITHER) {
-			if (g_var_38BC == 0x00) return NULL;
+			if (g_validateStrictIfZero == 0) return NULL;
 		}
 	}
 

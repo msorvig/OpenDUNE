@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/explosion.c Explosion routines. */
 
 #include <assert.h>
@@ -47,7 +45,7 @@ static void Explosion_Update(uint16 type, Explosion *e)
  */
 static void Explosion_Func_TileDamage(Explosion *e, uint16 parameter)
 {
-	static const int16 bloomLocations[] = { -1, 2, 1 };
+	static const int16 craterIconMapIndex[] = { -1, 2, 1 };
 
 	uint16 packed;
 	uint16 type;
@@ -73,30 +71,35 @@ static void Explosion_Func_TileDamage(Explosion *e, uint16 parameter)
 		Map_Update(packed, 0, false);
 	}
 
-	iconMapIndex = bloomLocations[g_table_landscapeInfo[type].variable_10];
-	if (iconMapIndex == -1) return;
+	if (g_table_landscapeInfo[type].craterType == 0) return;
 
+	/* You cannot damage veiled tiles */
 	overlaySpriteID = t->overlaySpriteID;
-
 	if (!Sprite_IsUnveiled(overlaySpriteID)) return;
 
+	iconMapIndex = craterIconMapIndex[g_table_landscapeInfo[type].craterType];
 	iconMap = &g_iconMap[g_iconMap[iconMapIndex]];
+
 	if (iconMap[0] <= overlaySpriteID && overlaySpriteID <= iconMap[10]) {
+		/* There already is a crater; make it bigger */
 		overlaySpriteID -= iconMap[0];
 		if (overlaySpriteID < 4) overlaySpriteID += 2;
 	} else {
+		/* Randomly pick 1 of the 2 possible craters */
 		overlaySpriteID = Tools_Random_256() & 1;
 	}
 
+	/* Reduce spice if there is any */
 	Map_ChangeSpiceAmount(packed, -1);
 
+	/* Boom a bloom if there is one */
 	if (t->groundSpriteID == g_bloomSpriteID) {
 		Map_Bloom_ExplodeSpice(packed, g_playerHouseID);
 		return;
 	}
 
+	/* Update the tile with the crater */
 	t->overlaySpriteID = overlaySpriteID + iconMap[0];
-
 	Map_Update(packed, 0, false);
 }
 
@@ -111,14 +114,16 @@ static void Explosion_Func_PlayVoice(Explosion *e, uint16 voiceID)
 }
 
 /**
- * A No-Op for Explosion.
+ * Shake the screen.
  * @param e The Explosion.
  * @param parameter Unused parameter.
  */
-static void Explosion_Func_NoOperation(Explosion *e, uint16 parameter)
+static void Explosion_Func_ScreenShake(Explosion *e, uint16 parameter)
 {
 	VARIABLE_NOT_USED(e);
 	VARIABLE_NOT_USED(parameter);
+
+	/* TODO -- Implement this function */
 }
 
 /**
@@ -164,11 +169,9 @@ static void Explosion_Func_SetAnimation(Explosion *e, uint16 animationMapID)
  * @param e The Explosion to change.
  * @param row Row number.
  */
-static void Explosion_Func_SetRow(Explosion *e, uint16 row)
+static void Explosion_Func_MoveYPosition(Explosion *e, uint16 row)
 {
-	if ((row & 0x800) != 0) row |= 0xF000;
-	e->position.s.x = 0;
-	e->position.s.y = row;
+	e->position.s.y += (int16)row;
 }
 
 /**
@@ -254,7 +257,7 @@ void Explosion_Start(uint16 explosionType, tile32 position)
 	uint16 packed;
 	uint8 i;
 
-	if (explosionType > 19) return;
+	if (explosionType > EXPLOSION_SPICE_BLOOM_TREMOR) return;
 	commands = g_table_explosion[explosionType];
 
 	packed = Tile_PackTile(position);
@@ -284,7 +287,7 @@ void Explosion_Start(uint16 explosionType, tile32 position)
 /**
  * Timer tick for explosions.
  */
-void Explosion_Tick()
+void Explosion_Tick(void)
 {
 	uint8 i;
 
@@ -311,10 +314,10 @@ void Explosion_Tick()
 				case EXPLOSION_SET_SPRITE:         Explosion_Func_SetSpriteID(e, parameter); break;
 				case EXPLOSION_SET_TIMEOUT:        Explosion_Func_SetTimeout(e, parameter); break;
 				case EXPLOSION_SET_RANDOM_TIMEOUT: Explosion_Func_SetRandomTimeout(e, parameter); break;
-				case EXPLOSION_SET_ROW:            Explosion_Func_SetRow(e, parameter); break;
+				case EXPLOSION_MOVE_Y_POSITION:    Explosion_Func_MoveYPosition(e, parameter); break;
 				case EXPLOSION_TILE_DAMAGE:        Explosion_Func_TileDamage(e, parameter); break;
 				case EXPLOSION_PLAY_VOICE:         Explosion_Func_PlayVoice(e, parameter); break;
-				case EXPLOSION_NOOP:               Explosion_Func_NoOperation(e, parameter); break;
+				case EXPLOSION_SCREEN_SHAKE:       Explosion_Func_ScreenShake(e, parameter); break;
 				case EXPLOSION_SET_ANIMATION:      Explosion_Func_SetAnimation(e, parameter); break;
 				case EXPLOSION_BLOOM_EXPLOSION:    Explosion_Func_BloomExplosion(e, parameter); break;
 			}

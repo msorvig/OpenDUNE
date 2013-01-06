@@ -1,10 +1,8 @@
-/* $Id$ */
-
 #include "types.h"
 
 #include "crashlog.h"
 
-void CrashLog_Init()
+void CrashLog_Init(void)
 {
 }
 

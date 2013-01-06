@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/table/landscapeinfo.c LandscapeInfo file table. */
 
 #include <stdio.h>
@@ -7,7 +5,7 @@
 
 #include "../map.h"
 
-LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
+const LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 	{ /* 0 / LST_NORMAL_SAND */
 		/* movementSpeed        */ { 112, 112, 112, 160, 255, 192 },
 		/* letUnitWobble        */ false,
@@ -15,7 +13,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ true,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ true,
-		/* variable_10          */ 1,
+		/* craterType           */ 1,
 		/* radarColour          */ 88,
 		/* spriteID             */ 37,
 	},
@@ -27,7 +25,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 1,
+		/* craterType           */ 1,
 		/* radarColour          */ 28,
 		/* spriteID             */ 39,
 	},
@@ -39,7 +37,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ true,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ true,
-		/* variable_10          */ 1,
+		/* craterType           */ 1,
 		/* radarColour          */ 92,
 		/* spriteID             */ 41,
 	},
@@ -51,7 +49,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ true,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ true,
-		/* variable_10          */ 1,
+		/* craterType           */ 1,
 		/* radarColour          */ 89,
 		/* spriteID             */ 43,
 	},
@@ -63,7 +61,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ true,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 2,
+		/* craterType           */ 2,
 		/* radarColour          */ 30,
 		/* spriteID             */ 45,
 	},
@@ -75,7 +73,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ true,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 2,
+		/* craterType           */ 2,
 		/* radarColour          */ 29,
 		/* spriteID             */ 47,
 	},
@@ -87,7 +85,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 0,
+		/* craterType           */ 0,
 		/* radarColour          */ 12,
 		/* spriteID             */ 49,
 	},
@@ -99,7 +97,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 0,
+		/* craterType           */ 0,
 		/* radarColour          */ 133,
 		/* spriteID             */ 51,
 	},
@@ -111,9 +109,9 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ true,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ true,
-		/* variable_10          */ 1,
-		/* radarColour          */ 88,
-		/* spriteID             */ 37,
+		/* craterType           */ 1,
+		/* radarColour          */ 215, /* was 88, but is changed on startup */
+		/* spriteID             */ 53,  /* was 37, but is changed on startup */
 	},
 
 	{ /* 9 / LST_THICK_SPICE */
@@ -123,9 +121,9 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ true,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ true,
-		/* variable_10          */ 1,
-		/* radarColour          */ 88,
-		/* spriteID             */ 37,
+		/* craterType           */ 1,
+		/* radarColour          */ 216, /* was 88, but is changed on startup */
+		/* spriteID             */ 53,  /* was 37, but is changed on startup */
 	},
 
 	{ /* 10 / LST_CONCRETE_SLAB */
@@ -135,7 +133,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 2,
+		/* craterType           */ 2,
 		/* radarColour          */ 133,
 		/* spriteID             */ 51,
 	},
@@ -147,7 +145,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 0,
+		/* craterType           */ 0,
 		/* radarColour          */ 65535,
 		/* spriteID             */ 31,
 	},
@@ -159,7 +157,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 0,
+		/* craterType           */ 0,
 		/* radarColour          */ 65535,
 		/* spriteID             */ 31,
 	},
@@ -171,7 +169,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ false,
 		/* isValidForStructure2 */ true,
 		/* canBecomeSpice       */ false,
-		/* variable_10          */ 2,
+		/* craterType           */ 2,
 		/* radarColour          */ 29,
 		/* spriteID             */ 47,
 	},
@@ -183,7 +181,7 @@ LandscapeInfo g_table_landscapeInfo[LST_MAX] = {
 		/* isSand               */ true,
 		/* isValidForStructure2 */ false,
 		/* canBecomeSpice       */ true,
-		/* variable_10          */ 1,
+		/* craterType           */ 1,
 		/* radarColour          */ 50,
 		/* spriteID             */ 57,
 	}

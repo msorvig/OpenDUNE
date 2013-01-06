@@ -1,11 +1,12 @@
-/* $Id$ */
-
 /** @file src/os/endian.h Os-independent endian detection routines. */
 
 #ifndef OS_ENDIAN_H
 #define OS_ENDIAN_H
 
 #if defined(_WIN32)
+	#if !defined(__LITTLE_ENDIAN)
+		#define __LITTLE_ENDIAN 1234
+	#endif /* __LITTLE_ENDIAN */
 	#define __BYTE_ORDER __LITTLE_ENDIAN
 	#if defined(_MSC_VER)
 		#include <stdlib.h>

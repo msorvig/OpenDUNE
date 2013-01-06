@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/map.h Map definitions. */
 
 #ifndef MAP_H
@@ -62,7 +60,7 @@ typedef struct LandscapeInfo {
 	bool   isSand;                                          /*!< True if the LandscapeType is a sand tile (sand, dune, spice, thickspice, bloom). */
 	bool   isValidForStructure2;                            /*!< True if a Structure with notOnConcrete true can be build on this LandscapeType. */
 	bool   canBecomeSpice;                                  /*!< True if the LandscapeType can become a spice tile. */
-	bool   variable_10;                                     /*!< ?? */
+	uint8  craterType;                                      /*!< Type of crater on tile; 0 for none, 1 for sand, 2 for concrete. */
 	uint16 radarColour;                                     /*!< Colour used on radar for this LandscapeType. */
 	uint16 spriteID;                                        /*!< Sprite used on map for this LandscapeType. */
 } LandscapeInfo;
@@ -73,7 +71,6 @@ extern uint16 g_mapSpriteID[];
 extern Tile g_map[];
 extern uint8 g_functions[3][3];
 
-extern uint8 g_changedTilesMap[512];
 extern uint8 g_dirtyMinimap[512];
 extern uint8 g_displayedMinimap[512];
 extern uint8 g_dirtyViewport[512];
@@ -89,7 +86,7 @@ extern const tile32 g_table_tilediff[][8];
 extern uint16 g_dirtyViewportCount;
 extern uint16 g_var_3A08;
 
-extern LandscapeInfo g_table_landscapeInfo[LST_MAX];
+extern const LandscapeInfo g_table_landscapeInfo[LST_MAX];
 
 extern uint16 Map_MoveDirection(uint16 direction);
 extern void Map_SetSelection(uint16 packed);

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/gui/widget_click.c %Widget clicking handling routines. */
 
 #include <assert.h>
@@ -53,7 +51,7 @@ static char *GenerateSavegameFilename(uint16 number)
  * @param scrollbar The scrollbar.
  * @param scroll The amount of scrolling.
  */
-void GUI_Widget_Scrollbar_Scroll(WidgetScrollbar *scrollbar, uint16 scroll)
+static void GUI_Widget_Scrollbar_Scroll(WidgetScrollbar *scrollbar, uint16 scroll)
 {
 	scrollbar->scrollPosition += scroll;
 
@@ -288,7 +286,7 @@ bool GUI_Widget_TextButton_Click(Widget *w)
 
 	Unit_SetAction(u, action);
 
-	if (ui->movementType == MOVEMENT_FOOT) Sound_StartSound(ai->selectionType);
+	if (ui->movementType == MOVEMENT_FOOT) Sound_StartSound(ai->soundID);
 
 	if (unitAction == action) return true;
 
@@ -424,13 +422,13 @@ static void GUI_Widget_Undraw(Widget *w, uint8 colour)
 	width = w->width;
 	height = w->height;
 
-	if (g_screenActiveID == 0) {
+	if (g_screenActiveID == SCREEN_0) {
 		GUI_Mouse_Hide_InRegion(offsetX, offsetY, offsetX + width, offsetY + height);
 	}
 
 	GUI_DrawFilledRectangle(offsetX, offsetY, offsetX + width, offsetY + height, colour);
 
-	if (g_screenActiveID == 0) {
+	if (g_screenActiveID == SCREEN_0) {
 		GUI_Mouse_Show_InRegion();
 	}
 }
@@ -443,7 +441,7 @@ static void GUI_Window_Create(WindowDesc *desc)
 
 	g_widgetLinkedListTail = NULL;
 
-	GFX_Screen_SetActive(2);
+	GFX_Screen_SetActive(SCREEN_1);
 
 	Widget_SetCurrentWidget(desc->index);
 
@@ -542,11 +540,11 @@ static void GUI_Window_Create(WindowDesc *desc)
 
 	Widget_SetCurrentWidget(desc->index);
 
-	GUI_Screen_Copy(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, 2, 0);
+	GUI_Screen_Copy(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, SCREEN_1, SCREEN_0);
 
 	GUI_Mouse_Show_Safe();
 
-	GFX_Screen_SetActive(0);
+	GFX_Screen_SetActive(SCREEN_0);
 }
 
 static void GUI_Window_BackupScreen(WindowDesc *desc)
@@ -554,7 +552,7 @@ static void GUI_Window_BackupScreen(WindowDesc *desc)
 	Widget_SetCurrentWidget(desc->index);
 
 	GUI_Mouse_Hide_Safe();
-	GFX_CopyToBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, GFX_Screen_Get_ByIndex(5));
+	GFX_CopyToBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, GFX_Screen_Get_ByIndex(SCREEN_2));
 	GUI_Mouse_Show_Safe();
 }
 
@@ -563,7 +561,7 @@ static void GUI_Window_RestoreScreen(WindowDesc *desc)
 	Widget_SetCurrentWidget(desc->index);
 
 	GUI_Mouse_Hide_Safe();
-	GFX_CopyFromBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, GFX_Screen_Get_ByIndex(5));
+	GFX_CopyFromBuffer(g_curWidgetXBase * 8, g_curWidgetYBase, g_curWidgetWidth * 8, g_curWidgetHeight, GFX_Screen_Get_ByIndex(SCREEN_2));
 	GUI_Mouse_Show_Safe();
 }
 
@@ -581,8 +579,7 @@ static void GUI_Widget_GameControls_Click(Widget *w)
 
 	GUI_Window_Create(desc);
 
-	loop = true;
-	while (loop) {
+	for (loop = true; loop; sleepIdle()) {
 		Widget *w2 = g_widgetLinkedListTail;
 		uint16 key = GUI_Widget_HandleEvents(w2);
 
@@ -625,13 +622,12 @@ static void GUI_Widget_GameControls_Click(Widget *w)
 		}
 
 		GUI_PaletteAnimate();
-		sleepIdle();
 	}
 
 	GUI_Window_RestoreScreen(desc);
 }
 
-static void ShadeScreen()
+static void ShadeScreen(void)
 {
 	uint16 i;
 
@@ -644,7 +640,7 @@ static void ShadeScreen()
 	GFX_SetPalette(g_palette_998A);
 }
 
-static void UnshadeScreen()
+static void UnshadeScreen(void)
 {
 	memmove(g_palette1, g_palette_998A, 256 * 3);
 
@@ -654,7 +650,7 @@ static void UnshadeScreen()
 static bool GUI_YesNo(uint16 stringID)
 {
 	WindowDesc *desc = &g_yesNoWindowDesc;
-	bool loop = true;
+	bool loop;
 	bool ret = false;
 
 	desc->stringID = stringID;
@@ -663,7 +659,7 @@ static bool GUI_YesNo(uint16 stringID)
 
 	GUI_Window_Create(desc);
 
-	while (loop) {
+	for (loop = true; loop; sleepIdle()) {
 		uint16 key = GUI_Widget_HandleEvents(g_widgetLinkedListTail);
 
 		if ((key & 0x8000) != 0) {
@@ -676,7 +672,6 @@ static bool GUI_YesNo(uint16 stringID)
 		}
 
 		GUI_PaletteAnimate();
-		sleepIdle();
 	}
 
 	GUI_Window_RestoreScreen(desc);
@@ -715,9 +710,7 @@ bool GUI_Widget_Options_Click(Widget *w)
 
 	GUI_Window_Create(desc);
 
-	loop = true;
-
-	while (loop) {
+	for (loop = true; loop; sleepIdle()) {
 		Widget *w2 = g_widgetLinkedListTail;
 		uint16 key = GUI_Widget_HandleEvents(w2);
 
@@ -763,7 +756,7 @@ bool GUI_Widget_Options_Click(Widget *w)
 				case 6:
 					/* "Are you sure you want to quit playing?" */
 					loop = !GUI_YesNo(0x65);
-					g_var_38F8 = loop;
+					g_running = loop;
 
 					Sound_Output_Feedback(0xFFFE);
 
@@ -773,7 +766,7 @@ bool GUI_Widget_Options_Click(Widget *w)
 				default: break;
 			}
 
-			if (g_var_38F8 && loop) {
+			if (g_running && loop) {
 				GUI_Window_BackupScreen(desc);
 
 				GUI_Window_Create(desc);
@@ -781,13 +774,12 @@ bool GUI_Widget_Options_Click(Widget *w)
 		}
 
 		GUI_PaletteAnimate();
-		sleepIdle();
 	}
 
 	g_textDisplayNeedsUpdate = true;
 
 	Sprites_LoadTiles();
-	GUI_DrawInterfaceAndRadar(0);
+	GUI_DrawInterfaceAndRadar(SCREEN_0);
 
 	UnshadeScreen();
 
@@ -807,7 +799,7 @@ bool GUI_Widget_Options_Click(Widget *w)
 	return false;
 }
 
-static uint16 GetSavegameCount()
+static uint16 GetSavegameCount(void)
 {
 	uint16 i;
 
@@ -870,12 +862,11 @@ static bool GUI_Widget_Savegame_Click(uint16 key)
 	GUI_Window_Create(desc);
 
 	ret = false;
-	loop = true;
 	loc08 = 1;
 
 	if (*saveDesc == '[') key = s_savegameCountOnDisk;
 
-	GFX_Screen_SetActive(0);
+	GFX_Screen_SetActive(SCREEN_0);
 
 	Widget_SetCurrentWidget(15);
 
@@ -883,7 +874,7 @@ static bool GUI_Widget_Savegame_Click(uint16 key)
 	GUI_DrawBorder((g_curWidgetXBase << 3) - 1, g_curWidgetYBase - 1, (g_curWidgetWidth << 3) + 2, g_curWidgetHeight + 2, 4, false);
 	GUI_Mouse_Show_Safe();
 
-	while (loop) {
+	for (loop = true; loop; sleepIdle()) {
 		Widget *w = g_widgetLinkedListTail;
 
 		GUI_DrawText_Wrapper(NULL, 0, 0, 232, 235, 0x22);
@@ -912,8 +903,6 @@ static bool GUI_Widget_Savegame_Click(uint16 key)
 
 			default: break;
 		}
-
-		sleepIdle();
 	}
 
 	GUI_Window_RestoreScreen(desc);
@@ -972,9 +961,7 @@ bool GUI_Widget_SaveLoad_Click(bool save)
 
 	UpdateArrows(save, true);
 
-	loop = true;
-
-	while (loop) {
+	for (loop = true; loop; sleepIdle()) {
 		Widget *w = g_widgetLinkedListTail;
 		uint16 key = GUI_Widget_HandleEvents(w);
 
@@ -1033,7 +1020,6 @@ bool GUI_Widget_SaveLoad_Click(bool save)
 		}
 
 		GUI_PaletteAnimate();
-		sleepIdle();
 	}
 
 	GUI_Window_RestoreScreen(desc);
@@ -1154,7 +1140,7 @@ static void GUI_FactoryWindow_ScrollList(int16 step)
 
 	for (i = 0; i < 32; i++) {
 		y += step;
-		GFX_Screen_Copy2(72, y, 72, 16, 32, 136, 2, 0, false);
+		GFX_Screen_Copy2(72, y, 72, 16, 32, 136, SCREEN_1, SCREEN_0, false);
 	}
 
 	GUI_Mouse_Show_Safe();
@@ -1177,12 +1163,12 @@ static void GUI_FactoryWindow_FailScrollList(int16 step)
 
 	for (i = 0; i < 6; i++) {
 		y += step;
-		GFX_Screen_Copy2(72, y, 72, 16, 32, 136, 2, 0, false);
+		GFX_Screen_Copy2(72, y, 72, 16, 32, 136, SCREEN_1, SCREEN_0, false);
 	}
 
 	for (i = 0; i < 6; i++) {
 		y -= step;
-		GFX_Screen_Copy2(72, y, 72, 16, 32, 136, 2, 0, false);
+		GFX_Screen_Copy2(72, y, 72, 16, 32, 136, SCREEN_1, SCREEN_0, false);
 	}
 
 	GUI_Mouse_Show_Safe();
@@ -1225,10 +1211,9 @@ bool GUI_Production_Down_Click(Widget *w)
 		}
 	}
 
-	do {
+	for (; g_timerTimeout != 0; sleepIdle()) {
 		GUI_FactoryWindow_UpdateSelection(false);
-		sleepIdle();
-	} while (g_timerTimeout != 0);
+	}
 
 	if (locdi) GUI_FactoryWindow_DrawDetails();
 
@@ -1272,10 +1257,9 @@ bool GUI_Production_Up_Click(Widget *w)
 		}
 	}
 
-	do {
+	for (; g_timerTimeout != 0; sleepIdle()) {
 		GUI_FactoryWindow_UpdateSelection(false);
-		sleepIdle();
-	} while (g_timerTimeout != 0);
+	}
 
 	if (locdi) GUI_FactoryWindow_DrawDetails();
 
@@ -1284,14 +1268,16 @@ bool GUI_Production_Up_Click(Widget *w)
 	return true;
 }
 
-static void GUI_Purchase_ShowInvoice()
+static void GUI_Purchase_ShowInvoice(void)
 {
 	Widget *w = g_widgetInvoiceTail;
-	uint16 oldScreenID = GFX_Screen_SetActive(2);
+	Screen oldScreenID;
 	uint16 y = 48;
 	uint16 total = 0;
 	uint16 x;
 	char textBuffer[12];
+
+	oldScreenID = GFX_Screen_SetActive(SCREEN_1);
 
 	GUI_DrawFilledRectangle(128, 48, 311, 159, 20);
 
@@ -1340,22 +1326,21 @@ static void GUI_Purchase_ShowInvoice()
 	GUI_DrawText_Monospace(textBuffer, x, 152, 11, 0, 6);
 
 	GUI_Mouse_Hide_Safe();
-	GUI_Screen_Copy(16, 48, 16, 48, 23, 112, 2, 0);
+	GUI_Screen_Copy(16, 48, 16, 48, 23, 112, SCREEN_1, SCREEN_0);
 	GUI_Mouse_Show_Safe();
 
-	GFX_Screen_SetActive(0);
+	GFX_Screen_SetActive(SCREEN_0);
 
 	GUI_FactoryWindow_DrawCaption(String_Get_ByIndex(STR_INVOICE_OF_UNITS_ON_ORDER));
 
 	Input_History_Clear();
 
-	while (GUI_Widget_HandleEvents(w) == 0) {
+	for (; GUI_Widget_HandleEvents(w) == 0; sleepIdle()) {
 		GUI_DrawCredits(g_playerHouseID, 0);
 
 		GUI_FactoryWindow_UpdateSelection(false);
 
 		GUI_PaletteAnimate();
-		sleepIdle();
 	}
 
 	GFX_Screen_SetActive(oldScreenID);
@@ -1363,7 +1348,7 @@ static void GUI_Purchase_ShowInvoice()
 	w = GUI_Widget_Get_ByIndex(w, 10);
 
 	if (w != NULL && Mouse_InsideRegion(w->offsetX, w->offsetY, w->offsetX + w->width, w->offsetY + w->height) != 0) {
-		while (Input_Test(0x41) != 0 || Input_Test(0x42) != 0) msleep(0);
+		while (Input_Test(0x41) != 0 || Input_Test(0x42) != 0) sleepIdle();
 		Input_History_Clear();
 	}
 

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/gui/viewport.c Viewport routines. */
 
 #include <stdio.h>
@@ -34,6 +32,7 @@
 
 static uint32 s_tickCursor;                                 /*!< Stores last time Viewport changed the cursor spriteID. */
 static uint32 s_tickMapScroll;                              /*!< Stores last time Viewport ran MapScroll function. */
+static uint32 s_tickClick;                                  /*!< Stores last time Viewport handled a click. */
 
 static uint8 s_paletteHouse[16];                            /*!< Used for palette manipulation to get housed coloured units etc. */
 static uint16 s_spriteFlags;
@@ -86,6 +85,12 @@ bool GUI_Widget_Viewport_Click(Widget *w)
 		drag = true;
 	}
 
+	/* ENHANCEMENT -- Dune2 depends on slow CPUs to limit the rate mouse clicks are handled. */
+	if (g_dune2_enhanced && (click || drag)) {
+		if (s_tickClick + 2 >= g_timerGame) return true;
+		s_tickClick = g_timerGame;
+	}
+
 	direction = 0xFFFF;
 	switch (w->index) {
 		default: break;
@@ -96,10 +101,12 @@ bool GUI_Widget_Viewport_Click(Widget *w)
 	}
 
 	if (direction != 0xFFFF) {
+		/* Always scroll if we have a click or a drag */
 		if (!click && !drag) {
+			/* Wait for either one of the timers */
 			if (s_tickMapScroll + 10 >= g_timerGame || s_tickCursor + 20 >= g_timerGame) return true;
-			if (g_gameConfig.autoScroll == 0) return true;
-			if (g_selectionType == SELECTIONTYPE_STRUCTURE || g_selectionType == SELECTIONTYPE_UNIT) return true;
+			/* Don't scroll if we have a structure/unit selected and don't want to autoscroll */
+			if (g_gameConfig.autoScroll == 0 && (g_selectionType == SELECTIONTYPE_STRUCTURE || g_selectionType == SELECTIONTYPE_UNIT)) return true;
 		}
 
 		s_tickMapScroll = g_timerGame;
@@ -202,12 +209,12 @@ bool GUI_Widget_Viewport_Click(Widget *w)
 
 			if (s->o.type == STRUCTURE_PALACE) House_Get_ByIndex(s->o.houseID)->palacePosition = s->o.position;
 
-			if (g_structureActiveType == STRUCTURE_REFINERY && g_var_38BC == 0) {
+			if (g_structureActiveType == STRUCTURE_REFINERY && g_validateStrictIfZero == 0) {
 				Unit *u;
 
-				g_var_38BC++;
+				g_validateStrictIfZero++;
 				u = Unit_CreateWrapper(g_playerHouseID, UNIT_HARVESTER, Tools_Index_Encode(s->o.index, IT_STRUCTURE));
-				g_var_38BC--;
+				g_validateStrictIfZero--;
 
 				if (u == NULL) {
 					h->harvestersIncoming++;
@@ -338,7 +345,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 	uint16 i;
 	uint16 curPos;
 	bool updateDisplay;
-	uint16 oldScreenID;
+	Screen oldScreenID;
 	uint16 oldValue_07AE_0000;
 	int16 minX[10];
 	int16 maxX[10];
@@ -350,7 +357,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 	memset(minX, 0xF, sizeof(minX));
 	memset(maxX, 0,   sizeof(minX));
 
-	oldScreenID = GFX_Screen_SetActive(2);
+	oldScreenID = GFX_Screen_SetActive(SCREEN_1);
 
 	oldValue_07AE_0000 = Widget_SetCurrentWidget(2);
 
@@ -725,7 +732,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 	if (g_changedTilesCount != 0) {
 		bool init = false;
 		bool update = false;
-		uint16 oldScreenID2 = 2;
+		Screen oldScreenID2 = SCREEN_1;
 
 		for (i = 0; i < g_changedTilesCount; i++) {
 			curPos = g_changedTiles[i];
@@ -734,7 +741,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 			if (!init) {
 				init = true;
 
-				oldScreenID2 = GFX_Screen_SetActive(2);
+				oldScreenID2 = GFX_Screen_SetActive(SCREEN_1);
 
 				GUI_Mouse_Hide_InWidget(3);
 			}
@@ -747,7 +754,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 		if (update) Map_UpdateMinimapPosition(g_minimapPosition, true);
 
 		if (init) {
-			GUI_Screen_Copy(32, 136, 32, 136, 8, 64, g_screenActiveID, 0);
+			GUI_Screen_Copy(32, 136, 32, 136, 8, 64, g_screenActiveID, SCREEN_0);
 
 			GFX_Screen_SetActive(oldScreenID2);
 
@@ -774,22 +781,22 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 	}
 
 	if (updateDisplay && !drawToMainScreen) {
-		if (g_var_3A14) {
+		if (g_viewport_fadein) {
 			GUI_Mouse_Hide_InWidget(g_curWidgetIndex);
 
 			/* ENHANCEMENT -- When fading in the game on start, you don't see the fade as it is against the already drawn screen. */
 			if (g_dune2_enhanced) {
-				uint16 oldScreenID = g_screenActiveID;
+				Screen oldScreenID = g_screenActiveID;
 
-				GFX_Screen_SetActive(0);
+				GFX_Screen_SetActive(SCREEN_0);
 				GUI_DrawFilledRectangle(g_curWidgetXBase << 3, g_curWidgetYBase, (g_curWidgetXBase + g_curWidgetWidth) << 3, g_curWidgetYBase + g_curWidgetHeight, 0);
 				GFX_Screen_SetActive(oldScreenID);
 			}
 
-			GUI_Screen_FadeIn(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, g_screenActiveID, 0);
+			GUI_Screen_FadeIn(g_curWidgetXBase, g_curWidgetYBase, g_curWidgetXBase, g_curWidgetYBase, g_curWidgetWidth, g_curWidgetHeight, g_screenActiveID, SCREEN_0);
 			GUI_Mouse_Show_InWidget();
 
-			g_var_3A14 = false;
+			g_viewport_fadein = false;
 		} else {
 			bool init = false;
 
@@ -815,7 +822,7 @@ void GUI_Widget_Viewport_Draw(bool forceRedraw, bool arg08, bool drawToMainScree
 					init = true;
 				}
 
-				GUI_Screen_Copy(x, y, x, y, width, height, g_screenActiveID, 0);
+				GUI_Screen_Copy(x, y, x, y, width, height, g_screenActiveID, SCREEN_0);
 			}
 
 			if (init) GUI_Mouse_Show_InWidget();
@@ -929,10 +936,10 @@ void GUI_Widget_Viewport_DrawTile(uint16 packed)
  */
 void GUI_Widget_Viewport_RedrawMap(uint16 screenID)
 {
-	uint16 oldScreenID = 2;
+	Screen oldScreenID = SCREEN_1;
 	uint16 i;
 
-	if (screenID == 0) oldScreenID = GFX_Screen_SetActive(2);
+	if (screenID == SCREEN_0) oldScreenID = GFX_Screen_SetActive(SCREEN_1);
 
 	for (i = 0; i < 4096; i++) GUI_Widget_Viewport_DrawTile(i);
 
@@ -943,6 +950,6 @@ void GUI_Widget_Viewport_RedrawMap(uint16 screenID)
 	GFX_Screen_SetActive(oldScreenID);
 
 	GUI_Mouse_Hide_InWidget(3);
-	GUI_Screen_Copy(32, 136, 32, 136, 8, 64, 2, 0);
+	GUI_Screen_Copy(32, 136, 32, 136, 8, 64, SCREEN_1, SCREEN_0);
 	GUI_Mouse_Show_InWidget();
 }

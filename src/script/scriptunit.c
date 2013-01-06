@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/script/unit.c %Unit script routines. */
 
 #include <assert.h>
@@ -14,6 +12,7 @@
 #include "../animation.h"
 #include "../audio/sound.h"
 #include "../config.h"
+#include "../explosion.h"
 #include "../gui/gui.h"
 #include "../house.h"
 #include "../map.h"
@@ -31,7 +30,7 @@
 
 typedef struct Pathfinder_Data {
 	uint16 packed;                                          /*!< From where we are pathfinding. */
-	uint16 score;                                           /*!< The total score for this route. */
+	 int16 score;                                           /*!< The total score for this route. */
 	uint16 routeSize;                                       /*!< The size of this route. */
 	uint8 *buffer;                                          /*!< A buffer to store the route. */
 } Pathfinder_Data;
@@ -383,11 +382,10 @@ uint16 Script_Unit_SetSpeed(ScriptEngine *script)
 	uint16 speed;
 
 	u = g_scriptCurrentUnit;
-	speed = clamp(STACK_PEEK(1), 0, 255);
+	speed = STACK_PEEK(1);
 
+	/* Scenario-based units move on a different speed */
 	if (!u->o.flags.s.byScenario) speed = speed * 192 / 256;
-
-	if (g_table_unitInfo[u->o.type].movementType == MOVEMENT_WINGER) speed = Tools_AdjustToGameSpeed(speed, 0, 255, true);
 
 	Unit_SetSpeed(u, speed);
 
@@ -464,7 +462,7 @@ uint16 Script_Unit_MoveToTarget(ScriptEngine *script)
 
 	diff = abs(orientation - u->orientation[0].current);
 
-	Unit_SetSpeed(u, Tools_AdjustToGameSpeed(min(distance / 8, 255), 25, 255, true) * (255 - diff) / 256);
+	Unit_SetSpeed(u, max(min(distance / 8, 255), 25) * (255 - diff) / 256);
 
 	delay = max((int16)distance / 1024, 1);
 
@@ -517,7 +515,7 @@ uint16 Script_Unit_Die(ScriptEngine *script)
 
 	if (u->o.type != UNIT_SABOTEUR) return 0;
 
-	Map_MakeExplosion(4, u->o.position, 300, 0);
+	Map_MakeExplosion(EXPLOSION_SABOTEUR_DEATH, u->o.position, 300, 0);
 	return 0;
 }
 
@@ -557,10 +555,10 @@ uint16 Script_Unit_ExplosionMultiple(ScriptEngine *script)
 
 	u = g_scriptCurrentUnit;
 
-	Map_MakeExplosion(11, u->o.position, Tools_RandomLCG_Range(25, 50), 0);
+	Map_MakeExplosion(EXPLOSION_DEATH_HAND, u->o.position, Tools_RandomLCG_Range(25, 50), 0);
 
 	for (i = 0; i < 7; i++) {
-		Map_MakeExplosion(11, Tile_MoveByRandom(u->o.position, STACK_PEEK(1), false), Tools_RandomLCG_Range(75, 150), 0);
+		Map_MakeExplosion(EXPLOSION_DEATH_HAND, Tile_MoveByRandom(u->o.position, STACK_PEEK(1), false), Tools_RandomLCG_Range(75, 150), 0);
 	}
 
 	return 0;
@@ -680,11 +678,11 @@ uint16 Script_Unit_Fire(ScriptEngine *script)
 		default: break;
 	}
 
-	u->fireDelay = Tools_AdjustToGameSpeed(ui->fireDelay * 2, 1, 255, true) & 0xFF;
+	u->fireDelay = Tools_AdjustToGameSpeed(ui->fireDelay * 2, 1, 0xFFFF, true);
 
 	if (fireTwice) {
 		u->o.flags.s.fireTwiceFlip = !u->o.flags.s.fireTwiceFlip;
-		if (u->o.flags.s.fireTwiceFlip) u->fireDelay = Tools_AdjustToGameSpeed(5, 1, 10, true) & 0xFF;
+		if (u->o.flags.s.fireTwiceFlip) u->fireDelay = Tools_AdjustToGameSpeed(5, 1, 10, true);
 	} else {
 		u->o.flags.s.fireTwiceFlip = false;
 	}
@@ -1841,7 +1839,7 @@ uint16 Script_Unit_MCVDeploy(ScriptEngine *script)
 	for (i = 0; i < 4; i++) {
 		static int8 offsets[4] = { 0, -1, -64, -65 };
 
-		s = Structure_Create(0xFFFF, STRUCTURE_CONSTRUCTION_YARD, Unit_GetHouseID(u), Tile_PackTile(u->o.position) + offsets[i]);
+		s = Structure_Create(STRUCTURE_INDEX_INVALID, STRUCTURE_CONSTRUCTION_YARD, Unit_GetHouseID(u), Tile_PackTile(u->o.position) + offsets[i]);
 
 		if (s != NULL) {
 			Unit_Remove(u);

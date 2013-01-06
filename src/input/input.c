@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/input/input.c Input routines. */
 
 #include <string.h>
@@ -58,26 +56,6 @@ static const uint8 s_translateTo[] = {'<', ':', 'c', 'h', '\\', '[', ']', '`', '
 assert_compile(lengthof(s_translateExtendedMap) == lengthof(s_translateMap));
 assert_compile(lengthof(s_translateMap) == lengthof(s_translateTo));
 
-/** Other recognized key codes */
-static const uint16 s_otherKeys[] = {
-	0x0220, 0x0320, 0x060C, 0x070D,
-	0x066A, 0x0669, 0x0230, 0x0330,
-	0x007D, 0x017D, 0x025A, 0x035A,
-	0x0200, 0x0410, 0x046E, 0x026E,
-	0x007C
-};
-
-/** Input flags required for other key codes. */
-static const InputFlagsEnum s_otherFlags[] = {
-	INPUT_FLAG_UNKNOWN_0008, INPUT_FLAG_UNKNOWN_0008, INPUT_FLAG_UNKNOWN_0010, INPUT_FLAG_UNKNOWN_0010,
-	INPUT_FLAG_UNKNOWN_0010, INPUT_FLAG_UNKNOWN_0010, INPUT_FLAG_UNKNOWN_0020, INPUT_FLAG_UNKNOWN_0020,
-	INPUT_FLAG_UNKNOWN_0040, INPUT_FLAG_UNKNOWN_0040, INPUT_FLAG_UNKNOWN_0080, INPUT_FLAG_UNKNOWN_0080,
-	INPUT_FLAG_UNKNOWN_0100, INPUT_FLAG_UNKNOWN_0400, INPUT_FLAG_UNKNOWN_0400, INPUT_FLAG_UNKNOWN_0400,
-	INPUT_FLAG_UNKNOWN_0100
-};
-
-assert_compile(lengthof(s_otherKeys) == lengthof(s_otherFlags));
-
 /** Key translation table. */
 static const uint8 s_keyTranslate[] = {
 	127,  'n',   2,   3,   4,   5,    6,   7,   8,  9,  10,    11,  12,  13,  15,  16,
@@ -88,7 +66,7 @@ static const uint8 s_keyTranslate[] = {
 	 'b', 'g', 'c', 'h', 127, 127,  127, 'z', '{'
 };
 
-void Input_Init()
+void Input_Init(void)
 {
 	uint8 i;
 
@@ -104,14 +82,14 @@ static uint16 Input_Keyboard_Translate(uint16 keyValue)
 {
 	uint16 i;
 
-	if ((g_inputFlags & 0x2) == 0) {
-		for (i = 0; i < lengthof(s_translateMap); i++) {
-			if (s_translateMap[i] == (uint8)(keyValue & 0xFF)) {
-				keyValue = s_translateTo[i] | (keyValue & 0xFF00);
-				break;
-			}
-		}
+	if ((g_inputFlags & INPUT_FLAG_NO_TRANSLATE) != 0) return keyValue;
+
+	for (i = 0; i < lengthof(s_translateMap); i++) {
+		if (s_translateMap[i] != (uint8)(keyValue & 0xFF)) continue;
+
+		return s_translateTo[i] | (keyValue & 0xFF00);
 	}
+
 	return keyValue;
 }
 
@@ -119,9 +97,7 @@ void Input_EventHandler(uint8 key)
 {
 	uint8 state;
 	uint8 i;
-	uint16 flags; /* Mask for allowed input types. See InputFlagsEnum. */
 
-	flags = g_inputFlags;
 	state = 0;
 
 	if (key == 0xE0) {
@@ -162,16 +138,6 @@ void Input_EventHandler(uint8 key)
 	if (state == 0x06 && key == 0x4C) return;
 
 	Input_HandleInput((state << 8) | key);
-
-	for (i = 0; i < lengthof(s_keymapIgnore); i++) {
-		if (s_keymapIgnore[i] == key) return;
-	}
-	for (i = 0; i < lengthof(s_otherKeys); i++) {
-		if (s_otherKeys[i] == key) {
-			if ((s_otherFlags[i] & flags) != 0) return;
-			break;
-		}
-	}
 }
 
 /**
@@ -205,7 +171,7 @@ uint16 Input_Flags_SetBits(uint16 bits)
 }
 
 /** Clear the history buffer. */
-void Input_History_Clear()
+void Input_History_Clear(void)
 {
 	s_historyTail = s_historyHead;
 }
@@ -260,7 +226,7 @@ static uint16 Input_History_Add(uint16 value)
 }
 
 /** Read input event from file. */
-static void Input_ReadInputFromFile()
+static void Input_ReadInputFromFile(void)
 {
 	uint16 value;
 	uint16 mouseBuffer[2];
@@ -477,7 +443,7 @@ void Input_HandleInput(uint16 input)
  * Is input available?
  * @return \c 0 if no input, else a value.
  */
-uint16 Input_IsInputAvailable()
+uint16 Input_IsInputAvailable(void)
 {
 	uint16 value;
 
@@ -490,17 +456,15 @@ uint16 Input_IsInputAvailable()
  * Wait for input, and return the read event.
  * @return New input.
  */
-uint16 Input_Wait()
+uint16 Input_Wait(void)
 {
 	uint16 value = 0;
 
-	for (;;) {
+	for (;; sleepIdle()) {
 		if (g_mouseMode == INPUT_MOUSE_MODE_PLAY) break;
 
 		value = s_historyHead;
 		if (value != s_historyTail) break;
-
-		msleep(0);
 	}
 
 	value = Input_ReadHistory(value);
@@ -595,19 +559,17 @@ uint16 Input_Keyboard_HandleKeys(uint16 value)
  * Wait for valid input.
  * @return Read input.
  */
-uint16 Input_WaitForValidInput()
+uint16 Input_WaitForValidInput(void)
 {
 	uint16 index = 0;
 	uint16 value, i;
 
 	do {
-		for (;;) {
+		for (;; sleepIdle()) {
 			if (g_mouseMode == INPUT_MOUSE_MODE_PLAY) break;
 
 			index = s_historyHead;
 			if (index != s_historyTail) break;
-
-			msleep(0);
 		}
 
 		value = Input_ReadHistory(index);
@@ -625,14 +587,14 @@ uint16 Input_WaitForValidInput()
  * Get the next key.
  * @return Next key.
  */
-uint16 Input_Keyboard_NextKey()
+uint16 Input_Keyboard_NextKey(void)
 {
 	uint16 i;
 	uint16 value;
 
 	Input_AddHistory(0);
 
-	for (;;) {
+	for (;; sleepIdle()) {
 		uint16 index;
 
 		index = s_historyHead;
@@ -653,8 +615,6 @@ uint16 Input_Keyboard_NextKey()
 		if ((value & 0xFF) >= 0x41 && (value & 0xFF) <= 0x44) index += 4;
 
 		s_historyHead = index + 2;
-
-		msleep(0);
 	}
 
 	if (value != 0) {

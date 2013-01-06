@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /** @file src/script/script.c Script routines. */
 
 #include <assert.h>
@@ -21,9 +19,9 @@ struct Structure *g_scriptCurrentStructure;
 struct Unit *g_scriptCurrentUnit;
 struct Team *g_scriptCurrentTeam;
 
-ScriptInfo s_scriptStructure;
-ScriptInfo s_scriptTeam;
-ScriptInfo s_scriptUnit;
+static ScriptInfo s_scriptStructure;
+static ScriptInfo s_scriptTeam;
+static ScriptInfo s_scriptUnit;
 ScriptInfo *g_scriptStructure = &s_scriptStructure;
 ScriptInfo *g_scriptTeam = &s_scriptTeam;
 ScriptInfo *g_scriptUnit = &s_scriptUnit;
@@ -169,7 +167,7 @@ static void Script_Error(const char *error, ...)
 	vsnprintf(buffer, sizeof(buffer), error, va);
 	va_end(va);
 
-	Error("[SCRIPT] [ERROR] %s; Type: %s; Index: %d; Type: %d;\n", buffer, type, g_scriptCurrentObject->index, g_scriptCurrentObject->type);
+	Error("[SCRIPT] %s; Type: %s; Index: %d; Type: %d;\n", buffer, type, g_scriptCurrentObject->index, g_scriptCurrentObject->type);
 }
 
 /**
