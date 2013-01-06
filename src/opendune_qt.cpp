@@ -290,7 +290,7 @@ extern "C" {
 
     }
 
-    extern int qt_main(int argc, char **argv);  // opendune main entry point. Called by DuneThread below.
+    extern int qt_opendune_main(int argc, char **argv);  // opendune main entry point. Called by DuneThread below.
 }
 
 class DuneThread : public QThread
@@ -300,7 +300,7 @@ public:
     {
         qDebug() << "Your battle for Dune begins...now.";
         char **argv = 0;
-        qt_main(0, argv);
+        qt_opendune_main(0, argv);
     }
 };
 
