@@ -29,17 +29,25 @@ opendune_sdl_build {
 #SOURCES +=  $$PWD/audio/dsp_none.c
 
 opendune_qt_build {
-    QT += multimedia
+
     DEFINES += QT_BUILD
     HEADERS +=  $$PWD/opendune_qt.h \
                 $$PWD/opendune_interface_qt.h
 
-    SOURCES +=  $$PWD/audio/dsp_qt.c \
-                $$PWD/audio/midi_qt.c \
-                $$PWD/video/video_qt.c \
-                $$PWD/opendune_qt.cpp
+    SOURCES += $$PWD/opendune_qt.cpp \
+               $$PWD/video/video_qt.c
 
-    include(qtmidi/src/qtmidi.pri)
+    contains(QT_CONFIG, multimedia) {
+        QT += multimedia
+
+        SOURCES +=  $$PWD/audio/dsp_qt.c \
+                    $$PWD/audio/midi_qt.c \
+
+        include(qtmidi/src/qtmidi.pri)
+    } else {
+        SOURCES +=  $$PWD/audio/dsp_none.c \
+                    $$PWD/audio/midi_none.c
+    }
 }
 
 # Input
