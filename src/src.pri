@@ -138,7 +138,7 @@ SOURCES += $$PWD/animation.c \
            $$PWD/audio/sound.c \
            $$PWD/codec/format40.c \
            $$PWD/codec/format80.c \
-           $$PWD/crashlog/crashlog.c \
+#           $$PWD/crashlog/crashlog.c \
            $$PWD/crashlog/crashlog_none.c \
 #           $$PWD/crashlog/crashlog_win32.c \
            $$PWD/gui/editbox.c \
